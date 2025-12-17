@@ -15,7 +15,8 @@ data Syntax = Missing
 -}
 data ParserState = ParserState {
     syntax :: [Syntax],
-    pos :: Int
+    pos :: Int,
+    errorMsg:: Maybe String
 }
 
 type TokenTable = Trie Token
@@ -28,6 +29,9 @@ data ParserContext = ParserContext {
     tokens :: TokenTable
 }
 
+atEnd :: ParserContext -> Int -> Bool
+atEnd c p = p >= length (inputString c)
+
 {-
     Get the character at index `p` from the input string
     in the `ParserContext`.
@@ -35,15 +39,32 @@ data ParserContext = ParserContext {
 getInputChar :: ParserContext -> Int -> Char
 getInputChar c p = (inputString c) !! p
 
+
+{-
+    Increment the current position in the parser state
+-}
+nextPos :: ParserState -> ParserState
+nextPos s = s { pos = (pos s) + 1}
+
 type ParserFn = ParserContext -> ParserState -> ParserState
+
+takeUntilFn :: (Char -> Bool) -> ParserFn
+takeUntilFn p c s =
+    let i = (pos s) in
+    if atEnd c i || p (getInputChar c i) then
+        s
+    else
+        takeUntilFn p c (nextPos s)
 
 
 {-
 tokenFn :: ParserFn
 tokenFn c s =
     let i = pos s
-        curr = getChar c i in
-    let tk = (tokens c)-}
+        curr = getInputChar c i
+        tk = matchPrefix (inputString c) (tokens c) i in
+    --identFn i tk c s
+    s-}
 
 main :: IO ()
 main = do
@@ -52,8 +73,13 @@ main = do
         inputString = "name : Type",
         tokens = empty
     }
-    let res = getInputChar c 3
-    putStrLn (show res)
+    let s = ParserState {
+        syntax = [],
+        pos = 0,
+        errorMsg = Nothing
+    }
+    let res = takeUntilFn (\x -> x == ':') c s
+    putStrLn (show $ pos res)
 
     let trie1 = empty
     let trie2 = (insert "def" 5 trie1)
