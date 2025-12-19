@@ -2,6 +2,8 @@ module Main (main) where
 
 import Trie
 import Data.Char (isAlpha, isAlphaNum)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 type SyntaxNodeKind = String
 type Token = String
@@ -85,7 +87,7 @@ type TokenTable = Trie Token
 data ParserContext = ParserContext {
     prec :: Int,
     inputString :: String,
-    tokens :: TokenTable
+    ctxTokens :: TokenTable
 }
 
 {-
@@ -271,7 +273,7 @@ tokenFn :: ParserFn
 tokenFn c s =
     let i = pos s
         curr = getInputChar c i
-        tk = matchPrefix (inputString c) (tokens c) i in
+        tk = matchPrefix (inputString c) (ctxTokens c) i in
     identFn i tk "anonymous" c s
 
 getTopSyntax :: ParserState -> Maybe Syntax
@@ -316,6 +318,7 @@ symbolInfo sym = ParserInfo {
     collectTokens = \tks -> sym : tks,
     collectKinds = \kinds -> kinds
 }
+
 {-
     Given a string, construct a parser that parses
     this string as a token.
@@ -330,19 +333,50 @@ symbol sym = Parser {
     fn = symbolFn sym
 }
 
+{-
+    Run the first parser and then the second
+-}
+andthenFn :: ParserFn -> ParserFn -> ParserFn
+andthenFn p q c s =
+    let s_new = p c s in
+    if hasError s then
+        s
+    else
+        q c s_new
+
+{-
+    Combine the collected tokens and kinds of the two parsers
+-}
+andthenInfo :: ParserInfo -> ParserInfo -> ParserInfo
+andthenInfo p q = ParserInfo {
+    collectTokens = (collectTokens p) . (collectTokens q),
+    collectKinds = (collectKinds p) . (collectKinds q)
+}
+
+andthen :: Parser -> Parser -> Parser
+andthen p q = Parser {
+    info = andthenInfo (info p) (info q),
+    fn = andthenFn (fn p) (fn q)
+}
+
+data State = State {
+    tokens :: TokenTable,
+    kinds :: [SyntaxNodeKind]
+}
+
 main :: IO ()
 main = do
     let c = ParserContext {
         prec = 0,
-        inputString = "name : Type",
-        tokens = (insert "sname" "name" empty)
+        inputString = "name hi : Type",
+        ctxTokens = insert "hi " "hi " (insert "name " "name " empty)
     }
     let s = ParserState {
         syntax = [],
         pos = 0,
         errorMsg = Nothing
     }
-    let testsym = symbol "name"
+    let testsym = symbol "name " `andthen` symbol "hi "
     let res = (fn testsym) c s
     putStrLn (show $ syntax res)
 

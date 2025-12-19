@@ -36,6 +36,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers
   default-language: Haskell2010
 
 executable PrattParser1-exe
@@ -50,6 +51,7 @@ executable PrattParser1-exe
   build-depends:
       PrattParser1
     , base >=4.7 && <5
+    , containers
   default-language: Haskell2010
 
 test-suite PrattParser1-test
@@ -65,4 +67,5 @@ test-suite PrattParser1-test
   build-depends:
       PrattParser1
     , base >=4.7 && <5
+    , containers
   default-language: Haskell2010
