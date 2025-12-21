@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Trie
-import Data.Char (isAlpha, isAlphaNum)
+import Data.Char (isAlpha, isAlphaNum, isDigit)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -9,6 +9,12 @@ type SyntaxNodeKind = String
 type Token = String
 type Name = String
 type Error = String
+
+numLitKind :: SyntaxNodeKind
+numLitKind = "num"
+
+identKind :: SyntaxNodeKind
+identKind = "ident"
 
 data Syntax = Missing
     | Node SyntaxNodeKind [Syntax]
@@ -36,6 +42,14 @@ data ParserInfo = ParserInfo {
     -- Adds the kinds relevant for the parser
     collectKinds :: [SyntaxNodeKind] -> [SyntaxNodeKind]
 }
+
+getKind :: Syntax -> SyntaxNodeKind
+getKind stx =
+    case stx of
+    Node kind _ -> kind
+    Missing -> "missing"
+    Atom val -> val
+    Ident _ -> identKind
 
 hasError :: ParserState -> Bool
 hasError s =
@@ -276,6 +290,32 @@ tokenFn c s =
         tk = matchPrefix (inputString c) (ctxTokens c) i in
     identFn i tk "anonymous" c s
 
+{-
+    Is true for space, tab, carriage return, or newline
+-}
+isWhitespace :: Char -> Bool
+isWhitespace c = c == ' ' || c == '\t' || c == '\r' || c == '\n'
+
+{-
+    Increments the current position so long as
+    the character is whitespace
+-}
+whitespace :: ParserFn
+whitespace c s =
+    let i = pos s in
+    if atEnd c i then
+        s
+    else
+        let curr = getInputChar c i in
+        if curr == '\t' then
+            mkUnexpectedError s "tabs not allowed"
+        else if curr == '\r' then
+            mkUnexpectedError s "isolated carriate return not allowed"
+        else if isWhitespace curr then
+            whitespace c (nextPos s)
+        else
+            s
+
 getTopSyntax :: ParserState -> Maybe Syntax
 getTopSyntax s =
     case (syntax s) of
@@ -364,11 +404,50 @@ data State = State {
     kinds :: [SyntaxNodeKind]
 }
 
+mkParserContext :: String -> TokenTable -> ParserContext
+mkParserContext input tokens = ParserContext {
+    prec = 0,
+    inputString = input,
+    ctxTokens = tokens
+}
+
+{-
+    Check if the syntax has the given kind
+-}
+isOfKind :: Syntax -> SyntaxNodeKind -> Bool
+isOfKind stx k = (getKind stx) == k
+
+{-
+    Consumes a token and checks that it has the
+    expected syntax kind. Otherwise, error.
+-}
+expectTokenFn :: SyntaxNodeKind -> String -> ParserFn
+expectTokenFn k desc c s =
+    let new_s = tokenFn c s in
+    -- If there isn't already an error,
+    -- then check if we have the expected kind
+    if not (hasError new_s) then
+        case getTopSyntax new_s of
+        Nothing -> mkUnexpectedError new_s "no syntax"
+        Just stx ->
+            if not (isOfKind stx k) then
+                mkUnexpectedError new_s desc
+            else
+                new_s
+    else
+        new_s
+
+{-
+runParserCategory :: String -> Syntax
+runParserCategory input =
+    let p = whitespace `andthenFn` commandParser
+    let ctx = mkParserContext input tokens-}
+
 main :: IO ()
 main = do
     let c = ParserContext {
         prec = 0,
-        inputString = "name hi : Type",
+        inputString = "1 name hi : Type",
         ctxTokens = insert "hi " "hi " (insert "name " "name " empty)
     }
     let s = ParserState {
@@ -376,12 +455,6 @@ main = do
         pos = 0,
         errorMsg = Nothing
     }
-    let testsym = symbol "name " `andthen` symbol "hi "
-    let res = (fn testsym) c s
+    --let testsym = symbol "name " `andthen` symbol "hi "
+    let res = (numLitFn) c s
     putStrLn (show $ syntax res)
-
-    let trie1 = empty
-    let trie2 = (insert "def" 5 trie1)
-    let trie3 = (insert "definition" 6 trie2)
-    let match = matchPrefix "definitions" trie3 0
-    putStrLn (show match)
