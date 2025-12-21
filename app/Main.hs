@@ -157,8 +157,9 @@ mkTokenAndFixPos startPos tk c s =
     Nothing -> mkErrorAt s "token" startPos
     Just tk ->
         let stopPos = startPos + (length tk)
-            sNew = s {pos = stopPos} in 
-        pushSyntax sNew (Atom tk)
+            sNew = s {pos = stopPos} 
+            sNewWhitespace = whitespace c sNew in 
+        pushSyntax sNewWhitespace (Atom tk)
 
 {-
     Consider many unicode characters as being valid letters
@@ -240,7 +241,8 @@ mkIdResult startPos tk identVal c s =
         mkTokenAndFixPos startPos tk c s
     -- Otherwise, construct the identifier
     else
-        pushSyntax s (Ident identVal)
+        let new_s = whitespace c s in
+        pushSyntax new_s (Ident identVal)
 
 {-
     Parse identifiers and tokens.
@@ -253,8 +255,8 @@ mkIdResult startPos tk identVal c s =
     If it cannot be parsed as an identifier, then the result is the token.
     Or an error if there if no possible token was provided.
 -}
-identFn :: Int -> Maybe Token -> Name -> ParserFn
-identFn startPos tk r = parse r
+identParseFn :: Int -> Maybe Token -> Name -> ParserFn
+identParseFn startPos tk r = parse r
     where
     parse :: Name -> ParserFn
     parse r c s =
@@ -288,7 +290,7 @@ tokenFn c s =
     let i = pos s
         curr = getInputChar c i
         tk = matchPrefix (inputString c) (ctxTokens c) i in
-    identFn i tk "anonymous" c s
+    identParseFn i tk "anonymous" c s
 
 {-
     Is true for space, tab, carriage return, or newline
@@ -340,7 +342,7 @@ satisfySymbolFn p c s =
             if p sym then
                 s_new
             else
-                mkUnexpectedError s_new "unexpected token"
+                mkUnexpectedError s_new ("unexpected token: " ++ sym)
         _ -> mkUnexpectedError s_new "unexpected identifier"
 
 {-
@@ -437,6 +439,13 @@ expectTokenFn k desc c s =
     else
         new_s
 
+identFn :: ParserFn
+identFn = expectTokenFn identKind "identifier"
+
+commandParser :: ParserFn
+commandParser =
+    identFn `andthenFn` (symbolFn ":=") `andthenFn` identFn
+
 {-
 runParserCategory :: String -> Syntax
 runParserCategory input =
@@ -447,14 +456,13 @@ main :: IO ()
 main = do
     let c = ParserContext {
         prec = 0,
-        inputString = "1 name hi : Type",
-        ctxTokens = insert "hi " "hi " (insert "name " "name " empty)
+        inputString = "new := hi : Type",
+        ctxTokens = insert ":=" ":=" (insert "name" "name" empty)
     }
     let s = ParserState {
         syntax = [],
         pos = 0,
         errorMsg = Nothing
     }
-    --let testsym = symbol "name " `andthen` symbol "hi "
-    let res = (numLitFn) c s
+    let res = commandParser c s
     putStrLn (show $ syntax res)
