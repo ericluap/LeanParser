@@ -21,14 +21,28 @@ data Syntax = Missing
     | Atom String
     | Ident String
     deriving Show
+
 {-
+    `syntax` stores the list of syntax we have created so far,
+    often the top elemenst are replaced with a single node that has
+    those elements as children (see `mkNode`)
+
     `pos` is the current position of the character we are parsing
-    within the input string
+    within the input string, it is incremented by `nextPos`
+
+    `errorMsg` is the current error message, if it is set then operations
+    will do nothing and just return the current state so that it propagates
+    upwards
+
+    `lhsPrec` stores the precedence level of the previous parser that ran,
+    this is set by `setLhsPrec` which is called from any parser made by
+    `leadingNode` or `trailingNode`
 -}
 data ParserState = ParserState {
     syntax :: [Syntax],
     pos :: Int,
-    errorMsg :: Maybe Error
+    errorMsg :: Maybe Error,
+    lhsPrec :: Int
 }
 
 data Parser = Parser {
@@ -485,23 +499,60 @@ mkNode s k initialSize =
 
 
 nodeFn :: SyntaxNodeKind -> ParserFn -> ParserFn
-nodeFn n p c s =
+nodeFn kind p c s =
     let initialSize = length (syntax s)    
         new_s = p c s in
-    mkNode new_s n initialSize
+    mkNode new_s kind initialSize
 
-{-node :: SyntaxNodeKind -> Parser -> Parser
-node n p = Parser {
+nodeInfo :: SyntaxNodeKind -> ParserInfo -> ParserInfo
+nodeInfo kind p = ParserInfo {
+    collectTokens = (collectTokens p),
+    collectKinds = \s -> kind : (collectKinds p s)
 }
 
-leadingNode :: SyntaxNodeKind -> Nat -> Parser -> Parser
-leadingNode n prec p =
-    checkPrec prec `andthen` node n p
+node :: SyntaxNodeKind -> Parser -> Parser
+node kind p = Parser {
+    fn = nodeFn kind (fn p),
+    info = nodeInfo kind (info p)
+}
+
+{-
+    Set the `lhsPrec` in the parser state to the
+    given precedence.
 -}
+setLhsPrecFn :: Int -> ParserFn
+setLhsPrecFn precInt _ s =
+    if (hasError s) then
+        s
+    else
+        s {lhsPrec = precInt}
+
+setLhsPrec :: Int -> Parser
+setLhsPrec precInt = Parser {
+    info = ParserInfo {
+        collectTokens = \x -> x,
+        collectKinds = \x -> x
+    },
+    fn = setLhsPrecFn precInt
+}
+
+{-
+    Given a precedence `prec` and a parser `p`,
+    create a new parser that has the given precedence.
+    This allows it to be used by the pratt parser properly.
+
+    Check that the given precedence `prec` is larger than that in the context.
+    Run the parser `p`.
+    Set the precedence of the previously run parser to be `prec` since
+    the previously run parser is now `p`.
+-}
+leadingNode :: SyntaxNodeKind -> Int -> Parser -> Parser
+leadingNode n prec p =
+    checkPrec prec `andthen` node n p `andthen` setLhsPrec prec 
 
 commandParser :: ParserFn
 commandParser =
-    identFn `andthenFn` (symbolFn ":=") `andthenFn` identFn
+    nodeFn "def" (identFn `andthenFn` (symbolFn ":=") `andthenFn` identFn)
 
 {-
 runParserCategory :: String -> Syntax
@@ -522,5 +573,4 @@ main = do
         errorMsg = Nothing
     }
     let res = commandParser c s
-    let new_res = mkNode res "def" 0
-    putStrLn (show $ syntax new_res)
+    putStrLn (show $ syntax res)
