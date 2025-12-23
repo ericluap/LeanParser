@@ -79,8 +79,8 @@ setError s e = s { errorMsg = Just e }
 mkError :: ParserState -> Error -> ParserState
 mkError s e = pushSyntax (setError s e) Missing
 
-mkUnexpectedError :: ParserState -> Error -> ParserState
-mkUnexpectedError s e = mkError (popSyntax s) e
+mkUnexpectedTokenError :: ParserState -> Error -> ParserState
+mkUnexpectedTokenError s e = mkError (popSyntax s) e
 
 mkEOIError :: ParserState -> ParserState
 mkEOIError s = mkError s "unexpected end of input"
@@ -211,10 +211,10 @@ isIdRest c = isAlphaNum c || c == '_' || c == '\'' || c == '!' ||
     c == '?' || isLetterLike c || isSubScriptAlnum c
 
 {-
-    Extract the substring in the range [start, stop)
+    Extract the sublist in the range [start, stop)
 -}
-extractSubstring :: String -> Int -> Int -> String
-extractSubstring str start stop =
+extractSublist :: [a] -> Int -> Int -> [a]
+extractSublist str start stop =
     take (stop - start) (drop start str)
 
 {-
@@ -273,7 +273,7 @@ identParseFn startPos tk r = parse r
                     s_new = takeWhileFn isIdRest c (nextPos s)
                     stopPos = (pos s_new)
                     -- Extract the substring representing the identifier
-                    identVal = extractSubstring (inputString c) startPos stopPos
+                    identVal = extractSublist (inputString c) startPos stopPos
                 in
                 -- Either construct this identifier or use the token
                 mkIdResult startPos tk identVal c s_new
@@ -310,9 +310,9 @@ whitespace c s =
     else
         let curr = getInputChar c i in
         if curr == '\t' then
-            mkUnexpectedError s "tabs not allowed"
+            mkError s "tabs not allowed"
         else if curr == '\r' then
-            mkUnexpectedError s "isolated carriate return not allowed"
+            mkError s "isolated carriate return not allowed"
         else if isWhitespace curr then
             whitespace c (nextPos s)
         else
@@ -342,8 +342,8 @@ satisfySymbolFn p c s =
             if p sym then
                 s_new
             else
-                mkUnexpectedError s_new ("unexpected token: " ++ sym)
-        _ -> mkUnexpectedError s_new "unexpected identifier"
+                mkUnexpectedTokenError s_new ("unexpected token: " ++ sym)
+        _ -> mkUnexpectedTokenError s_new "unexpected identifier"
 
 {-
     Parses the next part of the input
@@ -430,10 +430,10 @@ expectTokenFn k desc c s =
     -- then check if we have the expected kind
     if not (hasError new_s) then
         case getTopSyntax new_s of
-        Nothing -> mkUnexpectedError new_s "no syntax"
+        Nothing -> mkError new_s "no syntax"
         Just stx ->
             if not (isOfKind stx k) then
-                mkUnexpectedError new_s desc
+                mkUnexpectedTokenError new_s desc
             else
                 new_s
     else
@@ -441,6 +441,63 @@ expectTokenFn k desc c s =
 
 identFn :: ParserFn
 identFn = expectTokenFn identKind "identifier"
+
+{-
+    Checks that the given precedence is larger
+    than the that in the context.
+-}
+checkPrecFn :: Int -> ParserFn
+checkPrecFn precInt c s =
+    if prec c <= precInt then
+        s
+    else
+        mkError s "unexpected token at precedence level"
+
+checkPrec :: Int -> Parser
+checkPrec prec = Parser {
+    info = ParserInfo {
+        collectTokens = \x -> x,
+        collectKinds = \x -> x
+    },
+    fn = checkPrecFn prec
+}
+
+{-
+    Convert the top elements of syntax in the parser state
+    into a single syntax node.
+-}
+mkNode :: ParserState -> SyntaxNodeKind -> Int -> ParserState
+mkNode s k initialSize =
+    let currentSize = length (syntax s) in
+    {-
+        If there is an error but no node has been added,
+        add a missing node.
+    -}
+    if hasError s && currentSize == initialSize then
+        pushSyntax s Missing
+    else
+        let lengthDiff = currentSize - initialSize
+            children = extractSublist (syntax s) 0 lengthDiff
+            newNode = Node k children
+            syntaxListWithoutChildren = drop lengthDiff (syntax s)
+            newSyntaxList = newNode : syntaxListWithoutChildren in
+        s {syntax = newSyntaxList}
+
+
+nodeFn :: SyntaxNodeKind -> ParserFn -> ParserFn
+nodeFn n p c s =
+    let initialSize = length (syntax s)    
+        new_s = p c s in
+    mkNode new_s n initialSize
+
+{-node :: SyntaxNodeKind -> Parser -> Parser
+node n p = Parser {
+}
+
+leadingNode :: SyntaxNodeKind -> Nat -> Parser -> Parser
+leadingNode n prec p =
+    checkPrec prec `andthen` node n p
+-}
 
 commandParser :: ParserFn
 commandParser =
@@ -465,4 +522,5 @@ main = do
         errorMsg = Nothing
     }
     let res = commandParser c s
-    putStrLn (show $ syntax res)
+    let new_res = mkNode res "def" 0
+    putStrLn (show $ syntax new_res)
