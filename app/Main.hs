@@ -453,6 +453,10 @@ expectTokenFn k desc c s =
     else
         new_s
 
+{-
+    Consumes a single identifier.
+    If the next token is not an identifier, error.
+-}
 identFn :: ParserFn
 identFn = expectTokenFn identKind "identifier"
 
@@ -497,7 +501,24 @@ mkNode s k initialSize =
             newSyntaxList = newNode : syntaxListWithoutChildren in
         s {syntax = newSyntaxList}
 
+{-
+    Convert the top elements (plus one!) of syntax in the parser state
+    into a single syntax node.
+-}
+mkTrailingNode :: ParserState -> SyntaxNodeKind -> Int -> ParserState
+mkTrailingNode s k initialSize =
+    let currentSize = length (syntax s) + 1
+        lengthDiff = currentSize - initialSize
+        children = extractSublist (syntax s) 0 lengthDiff
+        newNode = Node k children
+        syntaxListWithoutChildren = drop lengthDiff (syntax s)
+        newSyntaxList = newNode : syntaxListWithoutChildren in
+    s {syntax = newSyntaxList} 
 
+{-
+    Runs the given parser and then puts all the
+    syntax it created into a single node.
+-}
 nodeFn :: SyntaxNodeKind -> ParserFn -> ParserFn
 nodeFn kind p c s =
     let initialSize = length (syntax s)    
@@ -510,9 +531,35 @@ nodeInfo kind p = ParserInfo {
     collectKinds = \s -> kind : (collectKinds p s)
 }
 
+{-
+    Runs the parser and then collects the resulting
+    syntax into a single node.
+-}
 node :: SyntaxNodeKind -> Parser -> Parser
 node kind p = Parser {
     fn = nodeFn kind (fn p),
+    info = nodeInfo kind (info p)
+}
+
+{-
+    Runs the parser and then collects the resulting
+    syntax as well as one more into a single node.
+-}
+trailingNodeFn :: SyntaxNodeKind -> ParserFn -> ParserFn
+trailingNodeFn kind p c s =
+    let initialSize = length (syntax s)    
+        new_s = p c s in
+    mkTrailingNode new_s kind initialSize
+
+{-
+    Like the `node` parser but it also collects
+    one syntax that existed before running the given parser.
+    This is the left hand side created from the leading parser
+    or from previous trailing parsers.
+-}
+trailingNodeAux :: SyntaxNodeKind -> Parser -> Parser
+trailingNodeAux kind p = Parser {
+    fn = trailingNodeFn kind (fn p),
     info = nodeInfo kind (info p)
 }
 
@@ -536,19 +583,51 @@ setLhsPrec precInt = Parser {
     fn = setLhsPrecFn precInt
 }
 
+checkLhsPrecFn :: Int -> ParserFn
+checkLhsPrecFn prec _ s =
+    if lhsPrec s >= prec then
+        s
+    else
+        mkError s "unexpected token at this precedence level"
+
+checkLhsPrec :: Int -> Parser
+checkLhsPrec prec = Parser {
+    info = ParserInfo {
+        collectTokens = \x -> x,
+        collectKinds = \x -> x
+    },
+    fn = checkLhsPrecFn prec
+}
+
 {-
     Given a precedence `prec` and a parser `p`,
-    create a new parser that has the given precedence.
+    create a new parser that has the given precedence
+    and combines all the resulting syntax made by `p` into a single node.
     This allows it to be used by the pratt parser properly.
 
     Check that the given precedence `prec` is larger than that in the context.
-    Run the parser `p`.
-    Set the precedence of the previously run parser to be `prec` since
+    Run the parser `node` with `p` as argument.
+    Set the lhs precedence of the previously run parser to be `prec` since
     the previously run parser is now `p`.
 -}
 leadingNode :: SyntaxNodeKind -> Int -> Parser -> Parser
 leadingNode n prec p =
     checkPrec prec `andthen` node n p `andthen` setLhsPrec prec 
+
+{-
+    Given a precedence `prec`, precedence `lhsPrec`, and parser `p`,
+    create a new parser that has the given precedence and `lhsPrec` restriction.
+
+    Check that the given precedence `prec` is larger than that in the context.
+    Check that the given `lhsPrec` is smaller than that in the parser state.
+    Run the parser `trailingNodeAux` with `p` as argument.
+    Set the lhs precedence of the previously run parser to be `prec` since
+    the previously run parser is now `p`.
+-}
+trailingNode :: SyntaxNodeKind -> Int -> Int -> Parser -> Parser
+trailingNode kind prec lhsPrec p =
+    checkPrec prec `andthen` checkLhsPrec lhsPrec `andthen`
+        trailingNodeAux kind p `andthen` setLhsPrec prec
 
 commandParser :: ParserFn
 commandParser =
