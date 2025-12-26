@@ -629,6 +629,28 @@ trailingNode kind prec lhsPrec p =
     checkPrec prec `andthen` checkLhsPrec lhsPrec `andthen`
         trailingNodeAux kind p `andthen` setLhsPrec prec
 
+data TokenMap a = TokenMap (Map String [a])
+    deriving Show
+
+insertTokenMap :: TokenMap a -> String -> a -> TokenMap a
+insertTokenMap (TokenMap map) key value =
+    TokenMap $
+    Map.insertWithKey
+        (\key newValue oldValue -> value : oldValue) 
+        key [value] map
+
+data PrattParsingTables = PrattParsingTables {
+    leadingTable :: TokenMap Parser,
+    leadingParsers :: [Parser],
+    trailingTable :: TokenMap Parser,
+    trailingParsers :: [Parser]
+}
+
+{-
+prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+prattParser kind tables c s =-}
+
+
 commandParser :: ParserFn
 commandParser =
     nodeFn "def" (identFn `andthenFn` (symbolFn ":=") `andthenFn` identFn)
@@ -649,7 +671,12 @@ main = do
     let s = ParserState {
         syntax = [],
         pos = 0,
-        errorMsg = Nothing
+        errorMsg = Nothing,
+        lhsPrec = 0
     }
     let res = commandParser c s
     putStrLn (show $ syntax res)
+
+    let map = insertTokenMap (TokenMap Map.empty) "test" "hi"
+    let map2 = insertTokenMap map "test" "hi2"
+    putStrLn (show map2)
