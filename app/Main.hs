@@ -44,6 +44,7 @@ data ParserState = ParserState {
     errorMsg :: Maybe Error,
     lhsPrec :: Int
 }
+    deriving Show
 
 data Parser = Parser {
     info :: ParserInfo,
@@ -646,10 +647,37 @@ data PrattParsingTables = PrattParsingTables {
     trailingParsers :: [Parser]
 }
 
-{-
-prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
-prattParser kind tables c s =-}
+restoreState :: ParserState -> Int -> Int -> ParserState
+restoreState s initialSize initialPos =
+    let lengthDiff = (length (syntax s)) - initialSize in
+    s {
+        syntax = drop lengthDiff (syntax s),
+        pos = initialPos,
+        errorMsg = Nothing
+    }
 
+peekToken :: ParserContext -> ParserState ->
+    (ParserState, (Either ParserState Syntax))
+peekToken c s =
+    let initialSize = length (syntax s)
+        iniPos = pos s
+        new_s = tokenFn c s in
+    if hasError new_s then
+        (restoreState new_s initialSize iniPos, Left new_s)
+    else
+        let stxMaybe = getTopSyntax new_s in
+        case stxMaybe of
+        Just stx -> (restoreState new_s initialSize iniPos, Right stx)
+        Nothing -> (restoreState new_s initialSize iniPos, Left new_s)
+
+{-
+leadingParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+leadingParser kind tables c s =
+    let initialSize = length (syntax s)
+
+prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+prattParser kind tables c s =
+    leadingParser kind tables c s-}
 
 commandParser :: ParserFn
 commandParser =
@@ -665,7 +693,7 @@ main :: IO ()
 main = do
     let c = ParserContext {
         prec = 0,
-        inputString = "new := hi : Type",
+        inputString = "new := hi test : Type",
         ctxTokens = insert ":=" ":=" (insert "name" "name" empty)
     }
     let s = ParserState {
@@ -676,7 +704,5 @@ main = do
     }
     let res = commandParser c s
     putStrLn (show $ syntax res)
-
-    let map = insertTokenMap (TokenMap Map.empty) "test" "hi"
-    let map2 = insertTokenMap map "test" "hi2"
-    putStrLn (show map2)
+    putStrLn (show $ (peekToken c res))
+    putStrLn (show $ (peekToken c res))
