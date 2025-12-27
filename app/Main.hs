@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main (main) where
 
 import Trie
@@ -630,9 +632,15 @@ trailingNode kind prec lhsPrec p =
     checkPrec prec `andthen` checkLhsPrec lhsPrec `andthen`
         trailingNodeAux kind p `andthen` setLhsPrec prec
 
+{-
+    Maps the name of a token to the list parsers that can parse it.
+-}
 data TokenMap a = TokenMap (Map String [a])
     deriving Show
 
+{-
+    Add a parser to the list of parsers that can parse a given token.
+-}
 insertTokenMap :: TokenMap a -> String -> a -> TokenMap a
 insertTokenMap (TokenMap map) key value =
     TokenMap $
@@ -640,6 +648,22 @@ insertTokenMap (TokenMap map) key value =
         (\key newValue oldValue -> value : oldValue) 
         key [value] map
 
+{-
+    Get the list of parsers that can parse a given token.
+-}
+lookupTokenMap :: TokenMap a -> String -> Maybe [a]
+lookupTokenMap (TokenMap map) key = Map.lookup key map
+
+{-
+    Stores all the information needed for Pratt parsing.
+
+    `leadingTable` maps the name of a token to the list of leading parsers that
+    we know ahead of time can parse it
+    `leadingParsers` is a list of leading parsers that we always try
+    regardless of the token
+
+    And then the same for the trailing parsers.
+-}
 data PrattParsingTables = PrattParsingTables {
     leadingTable :: TokenMap Parser,
     leadingParsers :: [Parser],
@@ -656,6 +680,12 @@ restoreState s initialSize initialPos =
         errorMsg = Nothing
     }
 
+{-
+    Peek at the next token.
+
+    I'm not certain why we are restoring the state
+    instead of just returning the original state.
+-}
 peekToken :: ParserContext -> ParserState ->
     (ParserState, (Either ParserState Syntax))
 peekToken c s =
@@ -669,6 +699,25 @@ peekToken c s =
         case stxMaybe of
         Just stx -> (restoreState new_s initialSize iniPos, Right stx)
         Nothing -> (restoreState new_s initialSize iniPos, Left new_s)
+
+{-
+    Get the list of all indexed parsers that can parse the next token.
+-}
+indexed :: forall a. TokenMap a -> ParserContext -> ParserState -> (ParserState, [a])
+indexed map c s =
+    let (new_s, stx) = peekToken c s
+        find :: String -> (ParserState, [a])
+        find name =
+            case (lookupTokenMap map name) of
+            Nothing -> (new_s, [])
+            Just as -> (new_s, as)
+        in
+    case stx of
+    Right (Atom sym) -> find sym
+    Right (Ident val) -> find identKind
+    Right (Node kind _) -> find kind
+    Right _ -> (new_s, [])
+    Left error_s -> (error_s, [])
 
 {-
 leadingParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
