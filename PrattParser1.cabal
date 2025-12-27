@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Defs
+      Parsers.Basic
+      Parsers.Token
       Trie
   other-modules:
       Paths_PrattParser1

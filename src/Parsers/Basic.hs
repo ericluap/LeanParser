@@ -1,0 +1,124 @@
+{-
+    This file defines basic parsers like
+    `symbol`, `andthen`, and `expectTokenFn`.
+-}
+module Parsers.Basic where
+
+import Defs
+import Parsers.Token
+
+getTopSyntax :: ParserState -> Maybe Syntax
+getTopSyntax s =
+    case (syntax s) of
+    [] -> Nothing
+    x : xs -> Just x
+
+{-
+    Parse the next token and check that it
+    satisfies the predicate. Otherwise error. 
+-}
+satisfySymbolFn :: (String -> Bool) -> ParserFn
+satisfySymbolFn p c s =
+    let iniPos = pos s
+        s_new = tokenFn c s
+    in
+    if hasError s_new then
+        s_new
+    else
+        case syntax s_new of
+        [] -> mkError s_new "no syntax in parser state"
+        (Atom sym) : _ ->
+            if p sym then
+                s_new
+            else
+                mkUnexpectedTokenError s_new ("unexpected token: " ++ sym)
+        _ -> mkUnexpectedTokenError s_new "unexpected identifier"
+
+{-
+    Parses the next part of the input
+    and checks that it is a token equal to the given string.
+-}
+symbolFn :: String -> ParserFn
+symbolFn sym = satisfySymbolFn (\s -> s == sym)
+
+{-
+    Adds the given string to the list of tokens.
+-}
+symbolInfo :: String -> ParserInfo
+symbolInfo sym = ParserInfo {
+    collectTokens = \tks -> sym : tks,
+    collectKinds = \kinds -> kinds
+}
+
+{-
+    Given a string, construct a parser that parses
+    this string as a token.
+    `info` stores this string as a new token
+
+    `fn` expects that the next part of the input is the
+    given string and parses it, errors otherwise
+-}
+symbol :: String -> Parser
+symbol sym = Parser {
+    info = symbolInfo sym,
+    fn = symbolFn sym
+}
+
+{-
+    Run the first parser and then the second
+-}
+andthenFn :: ParserFn -> ParserFn -> ParserFn
+andthenFn p q c s =
+    let s_new = p c s in
+    if hasError s then
+        s
+    else
+        q c s_new
+
+{-
+    Combine the collected tokens and kinds of the two parsers
+-}
+andthenInfo :: ParserInfo -> ParserInfo -> ParserInfo
+andthenInfo p q = ParserInfo {
+    collectTokens = (collectTokens p) . (collectTokens q),
+    collectKinds = (collectKinds p) . (collectKinds q)
+}
+
+andthen :: Parser -> Parser -> Parser
+andthen p q = Parser {
+    info = andthenInfo (info p) (info q),
+    fn = andthenFn (fn p) (fn q)
+}
+
+{-
+    Check if the syntax has the given kind
+-}
+isOfKind :: Syntax -> SyntaxNodeKind -> Bool
+isOfKind stx k = (getKind stx) == k
+
+{-
+    Consumes a token and checks that it has the
+    expected syntax kind. Otherwise, error.
+-}
+expectTokenFn :: SyntaxNodeKind -> String -> ParserFn
+expectTokenFn k desc c s =
+    let new_s = tokenFn c s in
+    -- If there isn't already an error,
+    -- then check if we have the expected kind
+    if not (hasError new_s) then
+        case getTopSyntax new_s of
+        Nothing -> mkError new_s "no syntax"
+        Just stx ->
+            if not (isOfKind stx k) then
+                mkUnexpectedTokenError new_s desc
+            else
+                new_s
+    else
+        new_s
+
+{-
+    Consumes a single identifier.
+    If the next token is not an identifier, error.
+-}
+identFn :: ParserFn
+identFn = expectTokenFn identKind "identifier"
