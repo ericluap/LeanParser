@@ -1,0 +1,4 @@
+- `Parsers` defines the basic parsing functions
+- `Pratt` defines the tools needed for and implements the Pratt parsing
+- `Defs.hs` has the basic definitions used throughout the parser
+- `Structures.hs` defines data structures

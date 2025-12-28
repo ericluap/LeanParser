@@ -1,7 +1,14 @@
-module Trie where
+{-
+    This file defines two data structures:
+    Trie and TokenMap.
+-}
+module Structures where
+
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 {-
-    This file defines a trie data structure. This is used to store the list
+    Here we define a trie data structure. This is used to store the list
     of tokens. By storing the tokens as a trie, we can easily extract
     the longest matching token.
 -}
@@ -41,4 +48,26 @@ matchPrefix s trie i = go trie i Nothing
             case lookup char children of
                 Nothing -> currentMatch
                 Just childTrie -> go childTrie (idx + 1) currentMatch
-            
+
+{-
+    Here we define a dictionary structure. It maps the name of a token to
+    the list parsers that can parse it.
+-}
+data TokenMap a = TokenMap (Map String [a])
+    deriving Show
+
+{-
+    Add a parser to the list of parsers that can parse a given token.
+-}
+insertTokenMap :: TokenMap a -> String -> a -> TokenMap a
+insertTokenMap (TokenMap map) key value =
+    TokenMap $
+    Map.insertWithKey
+        (\key newValue oldValue -> value : oldValue) 
+        key [value] map
+
+{-
+    Get the list of parsers that can parse a given token.
+-}
+lookupTokenMap :: TokenMap a -> String -> Maybe [a]
+lookupTokenMap (TokenMap map) key = Map.lookup key map

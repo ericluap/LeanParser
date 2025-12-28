@@ -3,7 +3,7 @@
 -}
 module Defs where
 
-import Trie
+import Structures
 
 type SyntaxNodeKind = String
 type Token = String
@@ -16,6 +16,14 @@ numLitKind = "num"
 identKind :: SyntaxNodeKind
 identKind = "ident"
 
+{-
+    A term of type `Syntax` is the result of parsing.
+
+    `Node` represents a grouping of syntax with its `SyntaxNodeKind`
+    tracking different kinds of grouping.
+    `Atom` represents a token that is a keyword.
+    `Ident` represents a token that is an identifier.
+-}
 data Syntax = Missing
     | Node SyntaxNodeKind [Syntax]
     | Atom String
@@ -46,16 +54,25 @@ data ParserState = ParserState {
 }
     deriving Show
 
-data Parser = Parser {
-    info :: ParserInfo,
-    fn :: ParserFn
-}
+{-
+    The core type of parsing functions.
+    Given a parsing context and state, they produce an updated state.
+
+    The updates change the position of the current state and add
+    newly produced syntax to the state.
+-}
+type ParserFn = ParserContext -> ParserState -> ParserState
 
 data ParserInfo = ParserInfo {
     -- Adds the tokens relevant for the parser
     collectTokens :: [Token] -> [Token],
     -- Adds the kinds relevant for the parser
     collectKinds :: [SyntaxNodeKind] -> [SyntaxNodeKind]
+}
+
+data Parser = Parser {
+    info :: ParserInfo,
+    fn :: ParserFn
 }
 
 getKind :: Syntax -> SyntaxNodeKind
@@ -139,5 +156,3 @@ getInputChar c p = (inputString c) !! p
 -}
 nextPos :: ParserState -> ParserState
 nextPos s = s { pos = (pos s) + 1}
-
-type ParserFn = ParserContext -> ParserState -> ParserState

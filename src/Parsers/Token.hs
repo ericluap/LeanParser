@@ -6,7 +6,7 @@
 module Parsers.Token where
 
 import Defs
-import Trie
+import Structures
 import Data.Char (isAlpha, isAlphaNum, isDigit)
 
 {-

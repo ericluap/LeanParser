@@ -28,7 +28,9 @@ library
       Defs
       Parsers.Basic
       Parsers.Token
-      Trie
+      Pratt.Basic
+      Pratt.PrecParsers
+      Structures
   other-modules:
       Paths_PrattParser1
   autogen-modules:

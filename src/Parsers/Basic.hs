@@ -122,3 +122,34 @@ expectTokenFn k desc c s =
 -}
 identFn :: ParserFn
 identFn = expectTokenFn identKind "identifier"
+
+restoreState :: ParserState -> Int -> Int -> ParserState
+restoreState s initialSize initialPos =
+    let lengthDiff = (length (syntax s)) - initialSize in
+    s {
+        syntax = drop lengthDiff (syntax s),
+        pos = initialPos,
+        errorMsg = Nothing
+    }
+
+{-
+    Peek at the next token.
+
+    I'm not certain why we are restoring the state
+    instead of just returning the original state.
+-}
+peekToken :: ParserContext -> ParserState ->
+    (ParserState, (Either ParserState Syntax))
+peekToken c s =
+    let initialSize = length (syntax s)
+        iniPos = pos s
+        new_s = tokenFn c s in
+    if hasError new_s then
+        (restoreState new_s initialSize iniPos, Left new_s)
+    else
+        let stxMaybe = getTopSyntax new_s in
+        case stxMaybe of
+        Just stx -> (restoreState new_s initialSize iniPos, Right stx)
+        Nothing ->
+            let error_s = mkError new_s "missing top syntax" in
+            (restoreState new_s initialSize iniPos, Left error_s)
