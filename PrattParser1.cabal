@@ -41,6 +41,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , hspec
   default-language: Haskell2010
 
 executable PrattParser1-exe
@@ -56,12 +57,14 @@ executable PrattParser1-exe
       PrattParser1
     , base >=4.7 && <5
     , containers
+    , hspec
   default-language: Haskell2010
 
 test-suite PrattParser1-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Pratt.BasicSpec
       Paths_PrattParser1
   autogen-modules:
       Paths_PrattParser1
@@ -72,4 +75,5 @@ test-suite PrattParser1-test
       PrattParser1
     , base >=4.7 && <5
     , containers
+    , hspec
   default-language: Haskell2010

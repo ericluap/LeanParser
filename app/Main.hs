@@ -18,19 +18,6 @@ mkParserContext input tokens = ParserContext {
     ctxTokens = tokens
 }
 
-commandParserFn :: ParserFn
-commandParserFn =
-    trailingNodeFn "def" ((symbolFn ":=") `andthenFn` identFn)
-
-commandParser :: Parser
-commandParser = Parser {
-    fn = commandParserFn,
-    info = ParserInfo {
-        collectTokens = \x -> x,
-        collectKinds = \x -> x
-    }
-}
-
 {-
 runParserCategory :: String -> Syntax
 runParserCategory input =
@@ -39,20 +26,4 @@ runParserCategory input =
 
 main :: IO ()
 main = do
-    let c = ParserContext {
-        prec = 0,
-        inputString = ":= hi test : Type",
-        ctxTokens = insert ":=" ":=" (insert "name" "name" empty)
-    }
-    let s = ParserState {
-        syntax = [],
-        pos = 0,
-        errorMsg = Nothing,
-        lhsPrec = 0
-    }
-
-    let res = longestMatchFn (Just $ Ident "name") [commandParser] c s
-    putStrLn (show $ syntax res)
-    putStrLn (show $ errorMsg res)
-
-
+    putStrLn "hi"

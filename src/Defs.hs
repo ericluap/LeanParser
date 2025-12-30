@@ -31,7 +31,7 @@ data Syntax = Missing
     | Node SyntaxNodeKind [Syntax]
     | Atom String
     | Ident String
-    deriving Show
+    deriving (Show, Eq)
 
 {-
     `syntax` stores the list of syntax we have created so far,
@@ -55,7 +55,7 @@ data ParserState = ParserState {
     errorMsg :: Maybe Error,
     lhsPrec :: Int
 }
-    deriving Show
+    deriving (Show, Eq)
 
 {-
     The core type of parsing functions.
