@@ -68,6 +68,51 @@ indexed map c s =
     Left error_s -> (error_s, [])
 
 {-
+    Runs the parser and checks that only one
+    piece of syntax is created.
+
+    This is used by both leading and trailing parsers
+    and so does some case work.
+
+    `left?` is `Nothing` for leading parsers.
+    For trailing parsers, it is the syntax of the left hand side.
+
+    `startLhsPrec` is the lhsPrec of `left?`
+    (the starting lhsPrec as opposed to the lhsPrec of the parser
+    that was previously attempted in the process of finding the longest match).
+    If `left?` is `Nothing`, then this is a leading parser so it doesn't
+    matter what lhsPrec is (we set it to `maxPrec` in case the parser that runs
+    does not set `lhsPrec`).
+
+    The lhsPrec is set manually here because the previously tried
+    parser may have changed it. Even though we restore the state after
+    running the previous parser, the `restoreState` function does
+    not restore the lhsPrec for some reason.
+-}
+runLongestMatchParser :: Maybe Syntax -> Int -> ParserFn -> ParserFn
+runLongestMatchParser maybeLeft startLhsPrec p c s =
+    let startSize = length (syntax s)
+        start_s = case maybeLeft of
+            Just left -> pushSyntax (s {lhsPrec = startLhsPrec}) left
+            Nothing -> s {lhsPrec = maxPrec}
+        new_s = p c start_s
+        in
+    -- success or error, it at least has the right number of nodes
+    if length (syntax new_s) == startSize + 1 then
+        new_s 
+    -- if it has the wrong number of nodes and an error,
+    -- replace the added nodes with Missing
+    else if hasError new_s then
+        let lengthDiff = length (syntax new_s) - startSize
+            newSyntax = drop lengthDiff (syntax new_s)
+            in
+        pushSyntax (new_s {syntax = newSyntax}) Missing
+    -- the parser suceeded with the wrong number of nodes,
+    -- so this is not a properly set up parser
+    else
+        mkError new_s "longestMatch parsers must generate exactly one Syntax node"
+
+{-
     Get all the possibly applicable leading parsers and then
     try them all and use the one with the longest match.
 -}

@@ -16,6 +16,9 @@ numLitKind = "num"
 identKind :: SyntaxNodeKind
 identKind = "ident"
 
+maxPrec :: Int
+maxPrec = 1024
+
 {-
     A term of type `Syntax` is the result of parsing.
 
