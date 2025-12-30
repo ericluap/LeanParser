@@ -80,3 +80,20 @@ spec = do
             let manualRes = (fn commandParserLong) startContext startState
             let leadingRes = leadingParser "hi" testTables startContext startState
             leadingRes `shouldBe` manualRes
+        it "uses the indexed leading parsers" $ do
+            let startContext = ParserContext {
+                    prec = 0,
+                    inputString = ":= hi : Type",
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                }
+            let defParser = leadingNode "eq" 100 ((symbol ":=") `andthen` identParser)
+            let testTables = PrattParsingTables {
+                    leadingTable = insertTokenMap emptyTokenMap ":=" defParser,
+                    leadingParsers = [],
+                    trailingTable = emptyTokenMap,
+                    trailingParsers = []
+                }
+            let manualRes = (fn defParser) startContext startState
+            let leadingRes = leadingParser "hi" testTables startContext startState
+            leadingRes `shouldBe` manualRes
+        
