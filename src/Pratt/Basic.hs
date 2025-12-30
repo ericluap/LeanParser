@@ -11,6 +11,7 @@ import Defs
 import Data.Map (Map)
 import Structures
 import Parsers.Basic
+import Parsers.Token
 
 {-
     Stores all the information needed for Pratt parsing.
@@ -169,8 +170,12 @@ longestMatchFn maybeLeft ps c s =
 {-
     Get all the possibly applicable leading parsers and then
     try them all and use the one with the longest match.
+
+    NOTE: Lean wraps the result in a choice node if more than one piece
+    of syntax is produced. Since our longest match function just
+    arbitrarily chooses a longest match, we do not have choice nodes.
 -}
-{-leadingParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+leadingParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
 leadingParser kind tables c s =
     let initialSize = length (syntax s)
         (new_s, indexed_ps) = indexed (leadingTable tables) c s
@@ -183,13 +188,12 @@ leadingParser kind tables c s =
             -- If there are no parsers, consume a token and error
             let nextToken_s = tokenFn c new_s in
             if hasError nextToken_s then
-                return nextToken_s
+                nextToken_s
             else
                 mkUnexpectedTokenError nextToken_s kind
         else
-            let parsed_s = longestMatchFn all_ps c new_s in
-            mkResult parsed_s initialSize
+            longestMatchFn Nothing all_ps c new_s
 
-prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+{-prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
 prattParser kind tables c s =
     leadingParser kind tables c s-}

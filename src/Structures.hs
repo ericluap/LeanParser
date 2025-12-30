@@ -71,3 +71,6 @@ insertTokenMap (TokenMap map) key value =
 -}
 lookupTokenMap :: TokenMap a -> String -> Maybe [a]
 lookupTokenMap (TokenMap map) key = Map.lookup key map
+
+emptyTokenMap :: TokenMap a
+emptyTokenMap = TokenMap Map.empty

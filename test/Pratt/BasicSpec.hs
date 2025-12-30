@@ -11,7 +11,7 @@ startContext :: ParserContext
 startContext = ParserContext {
     prec = 0,
     inputString = "test := hi : Type",
-    ctxTokens = insert ":=" ":=" (insert "name" "name" empty)
+    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
 }
 
 startState :: ParserState
@@ -61,11 +61,22 @@ spec = do
             it "chooses the one with the longer match" $ do
                 let firstMatchRes = (fn commandParser) startContext startState
                 let secondMatchRes = (fn commandParserLong) startContext startState
-                let comparedRes =
+                let longerRes =
                         if pos firstMatchRes < pos secondMatchRes then
                             secondMatchRes
                         else
                             firstMatchRes
                 let longestMatchRes = longestMatchFn Nothing
                         [commandParser, commandParserLong] startContext startState
-                longestMatchRes `shouldBe` comparedRes
+                longestMatchRes `shouldBe` longerRes
+    describe "leadingParser" $ do
+        it "uses the non-indexed leading parsers" $ do
+            let testTables = PrattParsingTables {
+                leadingTable = emptyTokenMap,
+                leadingParsers = [commandParser, commandParserLong],
+                trailingTable = emptyTokenMap,
+                trailingParsers = []
+            }
+            let manualRes = (fn commandParserLong) startContext startState
+            let leadingRes = leadingParser "hi" testTables startContext startState
+            leadingRes `shouldBe` manualRes
