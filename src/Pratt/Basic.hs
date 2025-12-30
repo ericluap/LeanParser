@@ -113,6 +113,60 @@ runLongestMatchParser maybeLeft startLhsPrec p c s =
         mkError new_s "longestMatch parsers must generate exactly one Syntax node"
 
 {-
+    Run the given parser and check if it has a longer match than
+    the previously attempted parser. If so, keep the resuling state.
+    Otherwise, keep the state of the previously attempted one.
+
+    NOTE: This function differs from Lean's.
+    Lean doesn't just compare the length of the match, but also whether or not
+    there was an error and the given priority of each parser. If still the
+    results are equal, it creates a choice node (a node that stores
+    the results of both parses).
+-}
+longestMatchStep :: Maybe Syntax -> Int -> Int -> Int -> ParserFn -> ParserFn
+longestMatchStep maybeLeft startSize startLhsPrec startPos p c s =
+    let starting_s = restoreState s startSize startPos
+        end_s = runLongestMatchParser maybeLeft startLhsPrec p c starting_s
+        in
+    if pos end_s > pos s then
+        end_s
+    else
+        s
+
+{-
+    Given a list of parsers, try running each of them and return the resulting
+    state of the parser with the longest match.
+-}
+longestMatchFnAux :: Maybe Syntax -> Int -> Int -> Int -> [Parser] -> ParserFn
+longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps =
+    let parse :: [Parser] -> ParserFn
+        parse ps =
+            case ps of
+            [] -> (\_ s -> s)
+            p : ps -> (\c s ->
+                let new_s = longestMatchStep maybeLeft startSize startLhsPrec
+                        startPos (fn p) c s 
+                    in
+                parse ps c new_s)
+        in
+    parse ps
+
+{-
+    Given a list of parsers, try running each of them and return the resulting
+    state of the parser with the longest match.
+
+    NOTE: Since Lean uses priority as well, it runs the first parser manually
+    in order to get its priority and then calls `longestMatchFnAux`.
+-}
+longestMatchFn :: Maybe Syntax -> [Parser] -> ParserFn
+longestMatchFn maybeLeft ps c s =
+    let startSize = length (syntax s)
+        startLhsPrec = lhsPrec s
+        startPos = pos s
+        in
+    longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps c s
+
+{-
     Get all the possibly applicable leading parsers and then
     try them all and use the one with the longest match.
 -}

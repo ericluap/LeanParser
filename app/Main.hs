@@ -18,9 +18,18 @@ mkParserContext input tokens = ParserContext {
     ctxTokens = tokens
 }
 
-commandParser :: ParserFn
-commandParser =
-    checkLhsPrecFn 10 `andthenFn` trailingNodeFn "def" ((symbolFn ":=") `andthenFn` identFn)
+commandParserFn :: ParserFn
+commandParserFn =
+    trailingNodeFn "def" ((symbolFn ":=") `andthenFn` identFn)
+
+commandParser :: Parser
+commandParser = Parser {
+    fn = commandParserFn,
+    info = ParserInfo {
+        collectTokens = \x -> x,
+        collectKinds = \x -> x
+    }
+}
 
 {-
 runParserCategory :: String -> Syntax
@@ -42,7 +51,7 @@ main = do
         lhsPrec = 0
     }
 
-    let res = runLongestMatchParser (Just $ Ident "name") 10 commandParser c s
+    let res = longestMatchFn (Just $ Ident "name") [commandParser] c s
     putStrLn (show $ syntax res)
     putStrLn (show $ errorMsg res)
 
