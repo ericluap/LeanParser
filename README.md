@@ -1,3 +1,3 @@
-# PrattParser1
-Implements Lean's parser.
+# PrattParser
+Impelements Lean's parsing algorithm.
 
