@@ -6,12 +6,15 @@ import Structures
 import Parsers.Basic
 import Pratt.PrecParsers
 import Pratt.Basic
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 startContext :: ParserContext
 startContext = ParserContext {
     prec = 0,
     inputString = "test := hi : Type",
-    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+    ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
+    categories = Map.empty
 }
 
 startState :: ParserState
@@ -26,32 +29,32 @@ identParser :: Parser
 identParser = Parser {
     fn = identFn,
     info = ParserInfo {
-        collectTokens = \x -> x,
-        collectKinds = \x -> x 
+        collectTokens = id,
+        firstTokens = Epsilon
     }
 }
 
 commandParser :: Parser
 commandParser =
-    leadingNode "def" 100 (identParser `andthen` (symbol ":=") `andthen` identParser)
+    leadingNode "def" 100 (identParser `andthen` symbol ":=" `andthen` identParser)
 
 commandParserLong :: Parser
 commandParserLong =
-    leadingNode "def" 100 (identParser `andthen` (symbol ":=") `andthen` identParser
-    `andthen` (symbol ":") `andthen` identParser)
+    leadingNode "def" 100 (identParser `andthen` symbol ":=" `andthen` identParser
+    `andthen` symbol ":" `andthen` identParser)
 
 spec :: Spec
 spec = do
     describe "longestMatchFn" $ do
         context "when given a single leading parser" $ do
             it "just runs that leading parser" $ do
-                let justRunningRes = (fn commandParser) startContext startState
+                let justRunningRes = fn commandParser startContext startState
                 let longestMatchRes = longestMatchFn Nothing [commandParser]
                         startContext startState
                 longestMatchRes `shouldBe` justRunningRes
         context "when given a single non-lhsPrec setting parser" $ do
             it "runs that parser and sets the lhsPrec to maxPrec" $ do
-                let justRunningRes = (fn identParser) startContext startState
+                let justRunningRes = fn identParser startContext startState
                 let longestMatchRes = longestMatchFn Nothing [identParser]
                         startContext startState
                 syntax longestMatchRes `shouldBe` syntax justRunningRes
@@ -59,8 +62,8 @@ spec = do
                 lhsPrec longestMatchRes `shouldBe` maxPrec
         context "when given two matching parsers" $ do
             it "chooses the one with the longer match" $ do
-                let firstMatchRes = (fn commandParser) startContext startState
-                let secondMatchRes = (fn commandParserLong) startContext startState
+                let firstMatchRes = fn commandParser startContext startState
+                let secondMatchRes = fn commandParserLong startContext startState
                 let longerRes =
                         if pos firstMatchRes < pos secondMatchRes then
                             secondMatchRes
@@ -77,23 +80,24 @@ spec = do
                 trailingTable = emptyTokenMap,
                 trailingParsers = []
             }
-            let manualRes = (fn commandParserLong) startContext startState
+            let manualRes = fn commandParserLong startContext startState
             let leadingRes = leadingParser "hi" testTables startContext startState
             leadingRes `shouldBe` manualRes
         it "uses the indexed leading parsers" $ do
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi : Type",
-                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
+                    categories = Map.empty
                 }
-            let defParser = leadingNode "eq" 100 ((symbol ":=") `andthen` identParser)
+            let defParser = leadingNode "eq" 100 (symbol ":=" `andthen` identParser)
             let testTables = PrattParsingTables {
                     leadingTable = insertTokenMap emptyTokenMap ":=" defParser,
                     leadingParsers = [],
                     trailingTable = emptyTokenMap,
                     trailingParsers = []
                 }
-            let manualRes = (fn defParser) startContext startState
+            let manualRes = fn defParser startContext startState
             let leadingRes = leadingParser "hi" testTables startContext startState
             leadingRes `shouldBe` manualRes
     describe "trailingLoop" $ do
@@ -103,7 +107,8 @@ spec = do
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi",
-                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
+                    categories = Map.empty
                 }
             let trailingState = startState
                     {syntax = [Ident "test"], lhsPrec = 100}
@@ -113,7 +118,7 @@ spec = do
                 trailingTable = emptyTokenMap,
                 trailingParsers = [trailingCmdParser]
             }
-            let manualRes = (fn trailingCmdParser) startContext trailingState
+            let manualRes = fn trailingCmdParser startContext trailingState
             let leadingRes = trailingLoop testTables startContext trailingState
             leadingRes `shouldBe` manualRes
         it "uses the indexed trailing parsers" $ do
@@ -122,7 +127,8 @@ spec = do
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi",
-                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
+                    categories = Map.empty
                 }
             let trailingState = startState
                     {syntax = [Ident "test"], lhsPrec = 100}
@@ -132,7 +138,7 @@ spec = do
                 trailingTable = insertTokenMap emptyTokenMap ":=" trailingCmdParser,
                 trailingParsers = []
             }
-            let manualRes = (fn trailingCmdParser) startContext trailingState
+            let manualRes = fn trailingCmdParser startContext trailingState
             let leadingRes = trailingLoop testTables startContext trailingState
             leadingRes `shouldBe` manualRes
         it "repeatedly matches trailing parsers" $ do
@@ -141,7 +147,8 @@ spec = do
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi := hiagain",
-                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
+                    categories = Map.empty
                 }
             let trailingState = startState
                     {syntax = [Ident "test"], lhsPrec = 100}
@@ -151,8 +158,8 @@ spec = do
                 trailingTable = insertTokenMap emptyTokenMap ":=" trailingCmdParser,
                 trailingParsers = []
             }
-            let manualRes1 = (fn trailingCmdParser) startContext trailingState
-            let manualRes2 = (fn trailingCmdParser) startContext manualRes1
+            let manualRes1 = fn trailingCmdParser startContext trailingState
+            let manualRes2 = fn trailingCmdParser startContext manualRes1
             let leadingRes = trailingLoop testTables startContext trailingState
             leadingRes `shouldBe` manualRes2
     describe "prattParser" $ do
@@ -165,7 +172,7 @@ spec = do
                     trailingTable = insertTokenMap emptyTokenMap ":" trailingParser,
                     trailingParsers = []
                 }
-            let manualRes1 = (fn commandParser) startContext startState
-            let manualRes2 = (fn trailingParser) startContext manualRes1
+            let manualRes1 = fn commandParser startContext startState
+            let manualRes2 = fn trailingParser startContext manualRes1
             let leadingRes = prattParser "hi" testTables startContext startState
             leadingRes `shouldBe` manualRes2 

@@ -24,7 +24,7 @@ checkPrec :: Int -> Parser
 checkPrec prec = Parser {
     info = ParserInfo {
         collectTokens = id,
-        collectKinds = id
+        firstTokens = Epsilon
     },
     fn = checkPrecFn prec
 }
@@ -74,12 +74,6 @@ nodeFn kind p c s =
         new_s = p c s in
     mkNode new_s kind initialSize
 
-nodeInfo :: SyntaxNodeKind -> ParserInfo -> ParserInfo
-nodeInfo kind p = ParserInfo {
-    collectTokens = collectTokens p,
-    collectKinds = \s -> kind : collectKinds p s
-}
-
 {-
     Runs the parser and then collects the resulting
     syntax into a single node.
@@ -87,7 +81,7 @@ nodeInfo kind p = ParserInfo {
 node :: SyntaxNodeKind -> Parser -> Parser
 node kind p = Parser {
     fn = nodeFn kind (fn p),
-    info = nodeInfo kind (info p)
+    info = info p
 }
 
 {-
@@ -109,7 +103,7 @@ trailingNodeFn kind p c s =
 trailingNodeAux :: SyntaxNodeKind -> Parser -> Parser
 trailingNodeAux kind p = Parser {
     fn = trailingNodeFn kind (fn p),
-    info = nodeInfo kind (info p)
+    info = info p
 }
 
 {-
@@ -127,7 +121,7 @@ setLhsPrec :: Int -> Parser
 setLhsPrec precInt = Parser {
     info = ParserInfo {
         collectTokens = id,
-        collectKinds = id
+        firstTokens = Epsilon
     },
     fn = setLhsPrecFn precInt
 }
@@ -143,7 +137,7 @@ checkLhsPrec :: Int -> Parser
 checkLhsPrec prec = Parser {
     info = ParserInfo {
         collectTokens = id,
-        collectKinds = id
+        firstTokens = Epsilon
     },
     fn = checkLhsPrecFn prec
 }

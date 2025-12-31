@@ -14,40 +14,6 @@ import Parsers.Basic
 import Parsers.Token
 
 {-
-    Stores all the information needed for Pratt parsing.
-
-    `leadingTable` maps the name of a token to the list of leading parsers that
-    we know ahead of time can parse it
-    `leadingParsers` is a list of leading parsers that we always try
-    regardless of the token
-
-    And then the same for the trailing parsers.
--}
-data PrattParsingTables = PrattParsingTables {
-    leadingTable :: TokenMap Parser,
-    leadingParsers :: [Parser],
-    trailingTable :: TokenMap Parser,
-    trailingParsers :: [Parser]
-}
-
-{-
-    Stores all the parsing information for a category.
--}
-newtype ParserCategory = ParserCategory {
-    tables :: PrattParsingTables
-}
-
-{-
-    Stores all the parsing rules set up to parse the language.
-
-    `categories` maps the name of a category to all the parsing rules
-    stored for that category.
--}
-newtype State = State {
-    categories :: Map String ParserCategory
-}
-
-{-
     Get the list of all indexed parsers that can parse the next token.
 -}
 indexed :: forall a. TokenMap a -> ParserContext -> ParserState -> (ParserState, [a])

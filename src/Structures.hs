@@ -14,6 +14,7 @@ import qualified Data.Map as Map
 -}
 
 data Trie a = Trie (Maybe a) [(Char, Trie a)]
+    deriving (Show, Eq)
 
 -- Construct an empty trie
 empty :: Trie a
@@ -50,6 +51,24 @@ matchPrefix s trie i = go trie i Nothing
                 Just childTrie -> go childTrie (idx + 1) currentMatch
 
 {-
+    Find the value of the given key.
+-}
+maybeFind :: String -> Trie a -> Maybe a
+maybeFind [] (Trie v _) = v
+maybeFind (x : xs) (Trie _ children) =
+    case findChild x children of
+    Nothing -> Nothing
+    Just child -> maybeFind xs child
+    where
+        findChild :: Char -> [(Char, Trie a)] -> Maybe (Trie a)
+        findChild _ [] = Nothing
+        findChild x ((v, c) : cs) =
+            if x == v then
+                Just c
+            else
+                findChild x cs
+
+{-
     Here we define a dictionary structure. It maps the name of a token to
     the list parsers that can parse it.
 -}
@@ -63,7 +82,7 @@ insertTokenMap :: TokenMap a -> String -> a -> TokenMap a
 insertTokenMap (TokenMap map) key value =
     TokenMap $
     Map.insertWithKey
-        (\key newValue oldValue -> value : oldValue) 
+        (\_ _ oldValue -> value : oldValue) 
         key [value] map
 
 {-

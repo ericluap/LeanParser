@@ -5,6 +5,7 @@
 module Parsers.Basic where
 
 import Defs
+import qualified Data.Set as Set
 import Parsers.Token
 
 getTopSyntax :: ParserState -> Maybe Syntax
@@ -45,7 +46,7 @@ symbolFn sym = satisfySymbolFn (== sym)
 symbolInfo :: String -> ParserInfo
 symbolInfo sym = ParserInfo {
     collectTokens = (sym :),
-    collectKinds = id
+    firstTokens = Tokens (Set.singleton sym)
 }
 
 {-
@@ -79,7 +80,7 @@ andthenFn p q c s =
 andthenInfo :: ParserInfo -> ParserInfo -> ParserInfo
 andthenInfo p q = ParserInfo {
     collectTokens = collectTokens p . collectTokens q,
-    collectKinds = collectKinds p . collectKinds q
+    firstTokens = seqFirstTokens (firstTokens p) (firstTokens q)
 }
 
 andthen :: Parser -> Parser -> Parser

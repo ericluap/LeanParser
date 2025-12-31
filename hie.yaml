@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "PrattParser1:lib"
+    - path: "./app"
+      component: "PrattParser1:exe:PrattParser1-exe"
+    - path: "./test"
+      component: "PrattParser1:test:PrattParser1-test"

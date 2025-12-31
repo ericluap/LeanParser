@@ -4,6 +4,9 @@
 module Defs where
 
 import Structures
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Map (Map)
 
 type SyntaxNodeKind = String
 type Token = String
@@ -58,6 +61,54 @@ data ParserState = ParserState {
     deriving (Show, Eq)
 
 {-
+    Stores the list of tokens that may appear at the start
+    of the parser. This is used to index in the parser in the
+    Pratt parsing tables.
+
+    `Epsilon` means it has no first tokens
+    `Tokens` contains a list of tokens, one of which will appear first
+    `OptTokens` contains a list of tokens that could be first
+    but don't need to be.
+
+    We need to distinguish between `Tokens` and `OptTokens`
+    because they lead to different behavior when parses are combined.
+    See the docs for `seqFirstTokens`.
+-}
+data FirstTokens =
+    Epsilon
+    | Tokens (Set Token)
+    | OptTokens (Set Token)
+
+data ParserInfo = ParserInfo {
+    -- Adds the tokens relevant for the parser, used to add them to
+    -- the `ctxTokens` in the parser context
+    collectTokens :: [Token] -> [Token],
+    -- Starting tokens, used to index the parser in `PrattParsingTables`
+    firstTokens :: FirstTokens
+}
+
+{-
+    Stores all the information needed for Pratt parsing.
+
+    `leadingTable` maps the name of a token to the list of leading parsers that
+    we know ahead of time can parse it
+    `leadingParsers` is a list of leading parsers that we always try
+    regardless of the token
+
+    And then the same for the trailing parsers.
+-}
+data PrattParsingTables = PrattParsingTables {
+    leadingTable :: TokenMap Parser,
+    leadingParsers :: [Parser],
+    trailingTable :: TokenMap Parser,
+    trailingParsers :: [Parser]
+}
+
+type ParserCategories = Map String PrattParsingTables
+
+type TokenTable = Trie Token
+
+{-
     `prec` determines what parser are allowed to run
     (any parser that calls `checkPrec` will only run if its
     precedence is greater than or equal to this one)
@@ -69,7 +120,8 @@ data ParserState = ParserState {
 data ParserContext = ParserContext {
     prec :: Int,
     inputString :: String,
-    ctxTokens :: TokenTable
+    ctxTokens :: TokenTable,
+    categories :: ParserCategories
 }
 
 {-
@@ -81,17 +133,26 @@ data ParserContext = ParserContext {
 -}
 type ParserFn = ParserContext -> ParserState -> ParserState
 
-data ParserInfo = ParserInfo {
-    -- Adds the tokens relevant for the parser
-    collectTokens :: [Token] -> [Token],
-    -- Adds the kinds relevant for the parser
-    collectKinds :: [SyntaxNodeKind] -> [SyntaxNodeKind]
-}
-
 data Parser = Parser {
     info :: ParserInfo,
     fn :: ParserFn
 }
+
+{-
+    Sequence the first tokens of two parsers.
+    Normally, it is just the first tokens of the first parser.
+    But if the first tokens of the first parser are optional, then
+    it is possible for the first tokens of the second parser to still
+    be first tokens and so they are combined.
+-}
+seqFirstTokens :: FirstTokens -> FirstTokens -> FirstTokens
+seqFirstTokens fst snd =
+    case (fst, snd) of
+    (Epsilon, tks) -> tks
+    (OptTokens s1, OptTokens s2) -> OptTokens (Set.union s1 s2)
+    (OptTokens s1, Tokens s2) -> OptTokens (Set.union s1 s2)
+    (tks, _) -> tks
+
 
 getKind :: Syntax -> SyntaxNodeKind
 getKind stx =
@@ -141,8 +202,6 @@ mkEOIError s = mkError s "unexpected end of input"
 -}
 mkErrorAt :: ParserState -> Error -> Int -> ParserState
 mkErrorAt s e resetPos = mkError (s {pos = resetPos}) e
-
-type TokenTable = Trie Token
 
 {-
     Check if the given position is past the end
