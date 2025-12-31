@@ -194,6 +194,42 @@ leadingParser kind tables c s =
         else
             longestMatchFn Nothing all_ps c new_s
 
+{-
+    Get all the possibly applicable trailing parsers and then
+    try them all and use the one with the longest match.
+    Continue doing this until no trailing parsers succeed.
+-}
+trailingLoop :: PrattParsingTables -> ParserFn
+trailingLoop tables c s =
+    let initialSize = length (syntax s)
+        initialPos = pos s
+        (new_s, indexed_ps) = indexed (trailingTable tables) c s
+        in
+    if hasError new_s then
+        -- Discard the error and let the next leading parser have the error
+        restoreState s initialSize initialPos
+    else
+        let all_ps = indexed_ps ++ (trailingParsers tables) in
+        if null all_ps then
+            new_s
+        else
+            let maybeLeft = getTopSyntax new_s
+                noLeft_s = popSyntax new_s
+                afterStep_s = longestMatchFn maybeLeft all_ps c noLeft_s
+                in
+            if hasError afterStep_s then
+                -- If the longest matching parser fails but does not consume
+                -- any tokens, then discard the error.
+                if pos afterStep_s == initialPos then
+                    case maybeLeft of
+                    Nothing -> restoreState afterStep_s initialSize initialPos
+                    Just left -> pushSyntax 
+                        (restoreState afterStep_s (initialSize - 1) initialPos) left
+                else
+                    afterStep_s
+            else
+                trailingLoop tables c afterStep_s
+
 {-prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
 prattParser kind tables c s =
     leadingParser kind tables c s-}

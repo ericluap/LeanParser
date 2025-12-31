@@ -96,4 +96,62 @@ spec = do
             let manualRes = (fn defParser) startContext startState
             let leadingRes = leadingParser "hi" testTables startContext startState
             leadingRes `shouldBe` manualRes
-        
+    describe "trailingLoop" $ do
+        it "uses the non-indexed trailing parsers" $ do
+            let trailingCmdParser = trailingNode "def" 100 100
+                    (symbol ":=" `andthen` identParser)
+            let startContext = ParserContext {
+                    prec = 0,
+                    inputString = ":= hi",
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                }
+            let trailingState = startState
+                    {syntax = [Ident "test"], lhsPrec = 100}
+            let testTables = PrattParsingTables {
+                leadingTable = emptyTokenMap,
+                leadingParsers = [],
+                trailingTable = emptyTokenMap,
+                trailingParsers = [trailingCmdParser]
+            }
+            let manualRes = (fn trailingCmdParser) startContext trailingState
+            let leadingRes = trailingLoop testTables startContext trailingState
+            leadingRes `shouldBe` manualRes
+        it "uses the indexed trailing parsers" $ do
+            let trailingCmdParser = trailingNode "def" 100 100
+                    (symbol ":=" `andthen` identParser)
+            let startContext = ParserContext {
+                    prec = 0,
+                    inputString = ":= hi",
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                }
+            let trailingState = startState
+                    {syntax = [Ident "test"], lhsPrec = 100}
+            let testTables = PrattParsingTables {
+                leadingTable = emptyTokenMap,
+                leadingParsers = [],
+                trailingTable = insertTokenMap emptyTokenMap ":=" trailingCmdParser,
+                trailingParsers = []
+            }
+            let manualRes = (fn trailingCmdParser) startContext trailingState
+            let leadingRes = trailingLoop testTables startContext trailingState
+            leadingRes `shouldBe` manualRes
+        it "repeatedly matches trailing parsers" $ do
+            let trailingCmdParser = trailingNode "def" 100 100
+                    (symbol ":=" `andthen` identParser)
+            let startContext = ParserContext {
+                    prec = 0,
+                    inputString = ":= hi := hiagain",
+                    ctxTokens = insert ":=" ":=" (insert ":" ":" empty)
+                }
+            let trailingState = startState
+                    {syntax = [Ident "test"], lhsPrec = 100}
+            let testTables = PrattParsingTables {
+                leadingTable = emptyTokenMap,
+                leadingParsers = [],
+                trailingTable = insertTokenMap emptyTokenMap ":=" trailingCmdParser,
+                trailingParsers = []
+            }
+            let manualRes1 = (fn trailingCmdParser) startContext trailingState
+            let manualRes2 = (fn trailingCmdParser) startContext manualRes1
+            let leadingRes = trailingLoop testTables startContext trailingState
+            leadingRes `shouldBe` manualRes2
