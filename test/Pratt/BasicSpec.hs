@@ -155,3 +155,17 @@ spec = do
             let manualRes2 = (fn trailingCmdParser) startContext manualRes1
             let leadingRes = trailingLoop testTables startContext trailingState
             leadingRes `shouldBe` manualRes2
+    describe "prattParser" $ do
+        it "uses both leading and trailing parsers" $ do
+            let trailingParser = trailingNode "type" 100 100
+                    (symbol ":" `andthen` identParser)
+            let testTables = PrattParsingTables {
+                    leadingTable = emptyTokenMap,
+                    leadingParsers = [commandParser],
+                    trailingTable = insertTokenMap emptyTokenMap ":" trailingParser,
+                    trailingParsers = []
+                }
+            let manualRes1 = (fn commandParser) startContext startState
+            let manualRes2 = (fn trailingParser) startContext manualRes1
+            let leadingRes = prattParser "hi" testTables startContext startState
+            leadingRes `shouldBe` manualRes2 

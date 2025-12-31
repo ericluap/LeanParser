@@ -230,6 +230,21 @@ trailingLoop tables c s =
             else
                 trailingLoop tables c afterStep_s
 
-{-prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
+{-
+    Parse according to the parsers in the tables.
+    
+    First parse using the longest matching leading parser.
+    Then repeatedly parse using the longest matching trailing parsers.
+
+    Nothing in this function checks or handles precedence.
+    Instead, the leading and trailing parsers check and set the
+    precedences themselves
+    (`leadingNode` and `trailingNode` call `checkPrec` and `checkLhsPrec`).
+-}
+prattParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
 prattParser kind tables c s =
-    leadingParser kind tables c s-}
+    let new_s = leadingParser kind tables c s in
+    if hasError new_s then
+        new_s
+    else
+        trailingLoop tables c new_s
