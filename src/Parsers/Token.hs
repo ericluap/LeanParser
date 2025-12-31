@@ -7,7 +7,7 @@ module Parsers.Token where
 
 import Defs
 import Structures
-import Data.Char (isAlpha, isAlphaNum, isDigit)
+import Data.Char (isAlpha, isAlphaNum)
 
 {-
     Continue incrementing the position in the parser state until
@@ -15,7 +15,7 @@ import Data.Char (isAlpha, isAlphaNum, isDigit)
 -}
 takeUntilFn :: (Char -> Bool) -> ParserFn
 takeUntilFn p c s =
-    let i = (pos s) in
+    let i = pos s in
     if atEnd c i || p (getInputChar c i) then
         s
     else
@@ -26,7 +26,7 @@ takeUntilFn p c s =
     the predicate is not satisfied.
 -}
 takeWhileFn :: (Char -> Bool) -> ParserFn
-takeWhileFn p = takeUntilFn (\c -> not (p c))
+takeWhileFn p = takeUntilFn (not . p)
 
 {-
     Is true for space, tab, carriage return, or newline
@@ -64,7 +64,7 @@ mkTokenAndFixPos startPos tk c s =
     case tk of
     Nothing -> mkErrorAt s "token" startPos
     Just tk ->
-        let stopPos = startPos + (length tk)
+        let stopPos = startPos + length tk
             sNew = s {pos = stopPos} 
             sNewWhitespace = whitespace c sNew in 
         pushSyntax sNewWhitespace (Atom tk)
@@ -135,7 +135,7 @@ isToken startPos stopPos tk =
     case tk of
     Nothing -> False
     Just tk ->
-        (length tk) >= (stopPos - startPos)
+        length tk >= (stopPos - startPos)
 
 {-
     Given a token and identifier,
@@ -143,7 +143,7 @@ isToken startPos stopPos tk =
 -}
 mkIdResult :: Int -> Maybe Token -> String -> ParserFn
 mkIdResult startPos tk identVal c s =
-    let stopPos = (pos s) in
+    let stopPos = pos s in
     -- If the token is longer than the identifier, make a token
     if isToken startPos stopPos tk then
         mkTokenAndFixPos startPos tk c s
@@ -164,11 +164,11 @@ mkIdResult startPos tk identVal c s =
     Or an error if there if no possible token was provided.
 -}
 identParseFn :: Int -> Maybe Token -> Name -> ParserFn
-identParseFn startPos tk r = parse r
+identParseFn startPos tk = parse
     where
     parse :: Name -> ParserFn
     parse r c s =
-        let i = (pos s) in
+        let i = pos s in
         -- If we begin parsing at the end, then error
         if atEnd c i then
             mkEOIError s
@@ -179,7 +179,7 @@ identParseFn startPos tk r = parse r
                 let startPos = i
                     -- Continue consuming characters that are valid
                     s_new = takeWhileFn isIdRest c (nextPos s)
-                    stopPos = (pos s_new)
+                    stopPos = pos s_new
                     -- Extract the substring representing the identifier
                     identVal = extractSublist (inputString c) startPos stopPos
                 in

@@ -13,11 +13,9 @@ author:         Author name here
 maintainer:     example@example.com
 copyright:      2025 Author name here
 license:        BSD-3-Clause
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    CHANGELOG.md
 
 source-repository head
   type: git
@@ -25,6 +23,7 @@ source-repository head
 
 library
   exposed-modules:
+      Category
       Defs
       Parsers.Basic
       Parsers.Token

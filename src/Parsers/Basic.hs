@@ -9,9 +9,9 @@ import Parsers.Token
 
 getTopSyntax :: ParserState -> Maybe Syntax
 getTopSyntax s =
-    case (syntax s) of
+    case syntax s of
     [] -> Nothing
-    x : xs -> Just x
+    x : _ -> Just x
 
 {-
     Parse the next token and check that it
@@ -19,9 +19,7 @@ getTopSyntax s =
 -}
 satisfySymbolFn :: (String -> Bool) -> ParserFn
 satisfySymbolFn p c s =
-    let iniPos = pos s
-        s_new = tokenFn c s
-    in
+    let s_new = tokenFn c s in
     if hasError s_new then
         s_new
     else
@@ -39,15 +37,15 @@ satisfySymbolFn p c s =
     and checks that it is a token equal to the given string.
 -}
 symbolFn :: String -> ParserFn
-symbolFn sym = satisfySymbolFn (\s -> s == sym)
+symbolFn sym = satisfySymbolFn (== sym)
 
 {-
     Adds the given string to the list of tokens.
 -}
 symbolInfo :: String -> ParserInfo
 symbolInfo sym = ParserInfo {
-    collectTokens = \tks -> sym : tks,
-    collectKinds = \kinds -> kinds
+    collectTokens = (sym :),
+    collectKinds = id
 }
 
 {-
@@ -80,8 +78,8 @@ andthenFn p q c s =
 -}
 andthenInfo :: ParserInfo -> ParserInfo -> ParserInfo
 andthenInfo p q = ParserInfo {
-    collectTokens = (collectTokens p) . (collectTokens q),
-    collectKinds = (collectKinds p) . (collectKinds q)
+    collectTokens = collectTokens p . collectTokens q,
+    collectKinds = collectKinds p . collectKinds q
 }
 
 andthen :: Parser -> Parser -> Parser
@@ -94,7 +92,7 @@ andthen p q = Parser {
     Check if the syntax has the given kind
 -}
 isOfKind :: Syntax -> SyntaxNodeKind -> Bool
-isOfKind stx k = (getKind stx) == k
+isOfKind stx k = getKind stx == k
 
 {-
     Consumes a token and checks that it has the
@@ -125,7 +123,7 @@ identFn = expectTokenFn identKind "identifier"
 
 restoreState :: ParserState -> Int -> Int -> ParserState
 restoreState s initialSize initialPos =
-    let lengthDiff = (length (syntax s)) - initialSize in
+    let lengthDiff = length (syntax s) - initialSize in
     s {
         syntax = drop lengthDiff (syntax s),
         pos = initialPos,
@@ -139,7 +137,7 @@ restoreState s initialSize initialPos =
     instead of just returning the original state.
 -}
 peekToken :: ParserContext -> ParserState ->
-    (ParserState, (Either ParserState Syntax))
+    (ParserState, Either ParserState Syntax)
 peekToken c s =
     let initialSize = length (syntax s)
         iniPos = pos s

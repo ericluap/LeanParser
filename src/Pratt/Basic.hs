@@ -33,7 +33,7 @@ data PrattParsingTables = PrattParsingTables {
 {-
     Stores all the parsing information for a category.
 -}
-data ParserCategory = ParserCategory {
+newtype ParserCategory = ParserCategory {
     tables :: PrattParsingTables
 }
 
@@ -43,7 +43,7 @@ data ParserCategory = ParserCategory {
     `categories` maps the name of a category to all the parsing rules
     stored for that category.
 -}
-data State = State {
+newtype State = State {
     categories :: Map String ParserCategory
 }
 
@@ -56,14 +56,14 @@ indexed map c s =
         -- Find the relevant parsers given the name of the next token
         find :: String -> (ParserState, [a])
         find name =
-            case (lookupTokenMap map name) of
+            case lookupTokenMap map name of
             Nothing -> (new_s, [])
             Just as -> (new_s, as)
         in
     -- Extract the name of the next token and pass it to `find`
     case stx of
     Right (Atom sym) -> find sym
-    Right (Ident val) -> find identKind
+    Right (Ident _) -> find identKind
     Right (Node kind _) -> find kind
     Right _ -> (new_s, [])
     Left error_s -> (error_s, [])
@@ -144,11 +144,11 @@ longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps =
         parse ps =
             case ps of
             [] -> (\_ s -> s)
-            p : ps -> (\c s ->
+            p : rest -> (\c s ->
                 let new_s = longestMatchStep maybeLeft startSize startLhsPrec
                         startPos (fn p) c s 
                     in
-                parse ps c new_s)
+                parse rest c new_s)
         in
     parse ps
 
@@ -177,13 +177,11 @@ longestMatchFn maybeLeft ps c s =
 -}
 leadingParser :: SyntaxNodeKind -> PrattParsingTables -> ParserFn
 leadingParser kind tables c s =
-    let initialSize = length (syntax s)
-        (new_s, indexed_ps) = indexed (leadingTable tables) c s
-        in
+    let (new_s, indexed_ps) = indexed (leadingTable tables) c s in
     if hasError new_s then
         new_s
     else
-        let all_ps = (leadingParsers tables) ++ indexed_ps in
+        let all_ps = leadingParsers tables ++ indexed_ps in
         if null all_ps then
             -- If there are no parsers, consume a token and error
             let nextToken_s = tokenFn c new_s in
@@ -209,7 +207,7 @@ trailingLoop tables c s =
         -- Discard the error and let the next leading parser have the error
         restoreState s initialSize initialPos
     else
-        let all_ps = indexed_ps ++ (trailingParsers tables) in
+        let all_ps = indexed_ps ++ trailingParsers tables in
         if null all_ps then
             new_s
         else

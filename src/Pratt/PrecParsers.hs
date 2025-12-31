@@ -23,8 +23,8 @@ checkPrecFn precInt c s =
 checkPrec :: Int -> Parser
 checkPrec prec = Parser {
     info = ParserInfo {
-        collectTokens = \x -> x,
-        collectKinds = \x -> x
+        collectTokens = id,
+        collectKinds = id
     },
     fn = checkPrecFn prec
 }
@@ -76,8 +76,8 @@ nodeFn kind p c s =
 
 nodeInfo :: SyntaxNodeKind -> ParserInfo -> ParserInfo
 nodeInfo kind p = ParserInfo {
-    collectTokens = (collectTokens p),
-    collectKinds = \s -> kind : (collectKinds p s)
+    collectTokens = collectTokens p,
+    collectKinds = \s -> kind : collectKinds p s
 }
 
 {-
@@ -118,7 +118,7 @@ trailingNodeAux kind p = Parser {
 -}
 setLhsPrecFn :: Int -> ParserFn
 setLhsPrecFn precInt _ s =
-    if (hasError s) then
+    if hasError s then
         s
     else
         s {lhsPrec = precInt}
@@ -126,8 +126,8 @@ setLhsPrecFn precInt _ s =
 setLhsPrec :: Int -> Parser
 setLhsPrec precInt = Parser {
     info = ParserInfo {
-        collectTokens = \x -> x,
-        collectKinds = \x -> x
+        collectTokens = id,
+        collectKinds = id
     },
     fn = setLhsPrecFn precInt
 }
@@ -142,8 +142,8 @@ checkLhsPrecFn prec _ s =
 checkLhsPrec :: Int -> Parser
 checkLhsPrec prec = Parser {
     info = ParserInfo {
-        collectTokens = \x -> x,
-        collectKinds = \x -> x
+        collectTokens = id,
+        collectKinds = id
     },
     fn = checkLhsPrecFn prec
 }

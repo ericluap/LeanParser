@@ -53,7 +53,7 @@ matchPrefix s trie i = go trie i Nothing
     Here we define a dictionary structure. It maps the name of a token to
     the list parsers that can parse it.
 -}
-data TokenMap a = TokenMap (Map String [a])
+newtype TokenMap a = TokenMap (Map String [a])
     deriving Show
 
 {-

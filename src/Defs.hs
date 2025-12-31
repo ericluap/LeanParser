@@ -58,6 +58,21 @@ data ParserState = ParserState {
     deriving (Show, Eq)
 
 {-
+    `prec` determines what parser are allowed to run
+    (any parser that calls `checkPrec` will only run if its
+    precedence is greater than or equal to this one)
+    `inputString` is the entire string we are parsing
+    `ctxTokens` stores the possible tokens we can parse
+    `rules` stores all the parsing rules
+    (the equivalent of `Parser.Extension.State` in Lean)
+-}
+data ParserContext = ParserContext {
+    prec :: Int,
+    inputString :: String,
+    ctxTokens :: TokenTable
+}
+
+{-
     The core type of parsing functions.
     Given a parsing context and state, they produce an updated state.
 
@@ -96,13 +111,13 @@ hasError s =
     Add the given syntax to the top of the syntax list in the parser state.
 -}
 pushSyntax :: ParserState -> Syntax -> ParserState
-pushSyntax s n = s {syntax = n : (syntax s)}
+pushSyntax s n = s {syntax = n : syntax s}
 
 popSyntax :: ParserState -> ParserState
 popSyntax s =
     case syntax s of
     [] -> s
-    x : xs -> s {syntax = xs}
+    _ : xs -> s {syntax = xs}
 
 setError :: ParserState -> Error -> ParserState
 setError s e = s { errorMsg = Just e }
@@ -115,7 +130,7 @@ mkError :: ParserState -> Error -> ParserState
 mkError s e = pushSyntax (setError s e) Missing
 
 mkUnexpectedTokenError :: ParserState -> Error -> ParserState
-mkUnexpectedTokenError s e = mkError (popSyntax s) e
+mkUnexpectedTokenError s = mkError (popSyntax s)
 
 mkEOIError :: ParserState -> ParserState
 mkEOIError s = mkError s "unexpected end of input"
@@ -130,16 +145,6 @@ mkErrorAt s e resetPos = mkError (s {pos = resetPos}) e
 type TokenTable = Trie Token
 
 {-
-    `inputString` is the entire string we are parsing
-    `tokens` stores the possible tokens we can parse
--}
-data ParserContext = ParserContext {
-    prec :: Int,
-    inputString :: String,
-    ctxTokens :: TokenTable
-}
-
-{-
     Check if the given position is past the end
     of the input string.
 -}
@@ -151,11 +156,11 @@ atEnd c p = p >= length (inputString c)
     in the `ParserContext`.
 -}
 getInputChar :: ParserContext -> Int -> Char
-getInputChar c p = (inputString c) !! p
+getInputChar c p = inputString c !! p
 
 
 {-
     Increment the current position in the parser state
 -}
 nextPos :: ParserState -> ParserState
-nextPos s = s { pos = (pos s) + 1}
+nextPos s = s { pos = pos s + 1}
