@@ -1,7 +1,6 @@
-module Main where
+module Main (main) where
 
 import LeanParser
-import qualified Data.Map as Map
 
 command :: String
 command = "command"
@@ -19,5 +18,5 @@ main = do
     let leadingCtx = addLeadingParser command num emptyParsingRules
     let rulesCtx = addTrailingParsers command [plus, mul] leadingCtx
     let res = parse "12 * 3 + 65 * 4" rulesCtx
-    putStrLn (show res)
+    print res
     

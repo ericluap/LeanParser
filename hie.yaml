@@ -6,3 +6,5 @@ cradle:
       component: "PrattParser1:exe:PrattParser1-exe"
     - path: "./test"
       component: "PrattParser1:test:PrattParser1-test"
+    - path: "./examples/Arithmetic.hs"
+      component: "PrattParser1:exe:arithmetic"
