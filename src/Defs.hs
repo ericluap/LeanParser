@@ -7,6 +7,7 @@ import Structures
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
+import qualified Data.Map as Map
 
 type SyntaxNodeKind = String
 type Token = String
@@ -227,3 +228,27 @@ getInputChar c p = inputString c !! p
 -}
 nextPos :: ParserState -> ParserState
 nextPos s = s { pos = pos s + 1}
+
+{-
+    An initial empty parsing context to be used for adding
+    leading and trailing parsers to.
+-}
+emptyParsingRules :: ParserContext
+emptyParsingRules = ParserContext {
+    prec = 0,
+    inputString = "",
+    ctxTokens = empty,
+    categories = Map.empty
+}
+
+{-
+    An initial empty Pratt parsing tables to be used for
+    newly created parsing categories.
+-}
+emptyParsingTables :: PrattParsingTables
+emptyParsingTables = PrattParsingTables {
+    leadingTable = emptyTokenMap,
+    leadingParsers = [],
+    trailingTable = emptyTokenMap,
+    trailingParsers = []
+}

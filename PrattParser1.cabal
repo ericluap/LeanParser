@@ -25,6 +25,7 @@ library
   exposed-modules:
       Category
       Defs
+      Parse
       Parsers.Basic
       Parsers.Token
       Pratt.Basic
@@ -64,6 +65,7 @@ test-suite PrattParser1-test
   main-is: Spec.hs
   other-modules:
       CategorySpec
+      ParseSpec
       Pratt.BasicSpec
       Paths_PrattParser1
   autogen-modules:

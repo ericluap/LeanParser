@@ -3,4 +3,5 @@
 - `Category.hs` defines the category parsing function and ways to add new
 parsing functions to a category
 - `Defs.hs` has the basic definitions used throughout the parser
+- `Parse.hs` defines entry parsing function
 - `Structures.hs` defines data structures

@@ -75,7 +75,7 @@ spec = do
     describe "addLeadingParser" $ do
         it "adds indexed parser" $ do
             let indexedParser = symbol "test"
-            let Right res = addLeadingParser "command" indexedParser startContext
+            let res = addLeadingParser "command" indexedParser startContext
             let manualTable = commandTable {leadingTable =
                 insertTokenMap (leadingTable commandTable) "test" indexedParser}
             case Map.lookup "command" (categories res) of
@@ -86,13 +86,13 @@ spec = do
                         Map.keys leadingTokenMap `shouldBe` Map.keys manualTokenMap
         it "adds the tokens" $ do
             let indexedParser = symbol "test"
-            let Right res = addLeadingParser "command" indexedParser startContext
+            let res = addLeadingParser "command" indexedParser startContext
             let manualCtx = startContext {ctxTokens =
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
             let nonindexedParser = commandParser
-            let Right res = addLeadingParser "command" nonindexedParser startContext
+            let res = addLeadingParser "command" nonindexedParser startContext
             let manualTable = commandTable {leadingParsers =
                 nonindexedParser : leadingParsers commandTable}
             case Map.lookup "command" (categories res) of
@@ -114,14 +114,14 @@ spec = do
                     ctxTokens = empty,
                     categories = Map.singleton "command" commandTable
                 } 
-                let Right newContext = addLeadingParser "command" commandParser startContext
+                let newContext = addLeadingParser "command" commandParser startContext
                 let parseRes = categoryParser "command" newContext startState
                 let manualRes = fn commandParser newContext startState
                 parseRes `shouldBe` manualRes
     describe "addTrailingParser" $ do
         it "adds indexed parser" $ do
             let indexedParser = symbol "test"
-            let Right res = addTrailingParser "command" indexedParser startContext
+            let res = addTrailingParser "command" indexedParser startContext
             let manualTable = commandTable {trailingTable =
                 insertTokenMap (trailingTable commandTable) "test" indexedParser}
             case Map.lookup "command" (categories res) of
@@ -132,13 +132,13 @@ spec = do
                         Map.keys trailingTokenMap `shouldBe` Map.keys manualTokenMap
         it "adds the tokens" $ do
             let indexedParser = symbol "test"
-            let Right res = addTrailingParser "command" indexedParser startContext
+            let res = addTrailingParser "command" indexedParser startContext
             let manualCtx = startContext {ctxTokens =
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
             let nonindexedParser = commandParser
-            let Right res = addTrailingParser "command" nonindexedParser startContext
+            let res = addTrailingParser "command" nonindexedParser startContext
             let manualTable = commandTable {trailingParsers =
                 nonindexedParser : trailingParsers commandTable}
             case Map.lookup "command" (categories res) of
@@ -161,14 +161,13 @@ spec = do
                     ctxTokens = empty,
                     categories = Map.singleton "command" commandTable
                 } 
-                let Right leadingContext = addLeadingParser "command" commandParser
+                let leadingContext = addLeadingParser "command" commandParser
                         startContext
                 let typeParser = trailingNode "type" 100 100
                         (symbol ":" `andthen` identParser)
-                let Right finalContext = addTrailingParser "command" typeParser
+                let finalContext = addTrailingParser "command" typeParser
                         leadingContext
                 let parseRes = categoryParser "command" finalContext startState
                 let manualRes1 = fn commandParser finalContext startState
                 let manualRes2 = fn typeParser finalContext manualRes1
                 parseRes `shouldBe` manualRes2
-

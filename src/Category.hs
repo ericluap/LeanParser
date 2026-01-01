@@ -9,6 +9,7 @@ import Structures
 import Pratt.Basic
 import qualified Data.Map as Map
 import Data.Set (Set)
+import Data.Maybe (fromMaybe)
 
 {-
     Parses the given category.
@@ -50,32 +51,30 @@ addParserTokens p ctx =
     either as an indexed or non-indexed leading parser
     depending on the parser's `firstTokens`.
 -}
-addLeadingParser :: String -> Parser -> ParserContext -> Either String ParserContext
+addLeadingParser :: String -> Parser -> ParserContext -> ParserContext
 addLeadingParser catName p ctx =
-    case Map.lookup catName (categories ctx) of
-    Nothing -> Left ("unknown parser category " ++ catName)
-    Just tables ->
-        let tokens_ctx = addParserTokens p ctx
-            -- Adds the parser as an indexed parser
-            -- using each of its possible first tokens as an index.
-            addIndexed :: Set Token -> ParserContext
-            addIndexed tks =
-                let newTables = foldr
-                        (\tk currTables -> currTables {leadingTable =
-                            insertTokenMap (leadingTable currTables) tk p})
-                        tables tks
-                    in
-                tokens_ctx {categories =
-                    Map.insert catName newTables (categories tokens_ctx)}
-            in
-        case firstTokens (info p) of
-        Tokens tks -> Right (addIndexed tks)
-        OptTokens tks -> Right (addIndexed tks)
-        _ ->
-            -- Add the parser as a non-indexed parser
-            let newTables = tables {leadingParsers = p : leadingParsers tables} in
-            Right tokens_ctx {categories =
+    let tables = fromMaybe emptyParsingTables (Map.lookup catName (categories ctx))
+        tokens_ctx = addParserTokens p ctx
+        -- Adds the parser as an indexed parser
+        -- using each of its possible first tokens as an index.
+        addIndexed :: Set Token -> ParserContext
+        addIndexed tks =
+            let newTables = foldr
+                    (\tk currTables -> currTables {leadingTable =
+                        insertTokenMap (leadingTable currTables) tk p})
+                    tables tks
+                in
+            tokens_ctx {categories =
                 Map.insert catName newTables (categories tokens_ctx)}
+        in
+    case firstTokens (info p) of
+    Tokens tks -> addIndexed tks
+    OptTokens tks -> addIndexed tks
+    _ ->
+        -- Add the parser as a non-indexed parser
+        let newTables = tables {leadingParsers = p : leadingParsers tables} in
+        tokens_ctx {categories =
+            Map.insert catName newTables (categories tokens_ctx)}
 
 {-
     Add all used parser tokens to `ctxTokens` and then
@@ -83,29 +82,27 @@ addLeadingParser catName p ctx =
     either as an indexed or non-indexed trailing parser
     depending on the parser's `firstTokens`.
 -}
-addTrailingParser :: String -> Parser -> ParserContext -> Either String ParserContext
+addTrailingParser :: String -> Parser -> ParserContext -> ParserContext
 addTrailingParser catName p ctx =
-    case Map.lookup catName (categories ctx) of
-    Nothing -> Left ("unknown parser category " ++ catName)
-    Just tables ->
-        let tokens_ctx = addParserTokens p ctx
-            -- Adds the parser as an indexed parser
-            -- using each of its possible first tokens as an index.
-            addIndexed :: Set Token -> ParserContext
-            addIndexed tks =
-                let newTables = foldr
-                        (\tk currTables -> currTables {trailingTable =
-                            insertTokenMap (trailingTable currTables) tk p})
-                        tables tks
-                    in
-                tokens_ctx {categories =
-                    Map.insert catName newTables (categories tokens_ctx)}
-            in
-        case firstTokens (info p) of
-        Tokens tks -> Right (addIndexed tks)
-        OptTokens tks -> Right (addIndexed tks)
-        _ ->
-            -- Add the parser as a non-indexed parser
-            let newTables = tables {trailingParsers = p : trailingParsers tables} in
-            Right tokens_ctx {categories =
+    let tables = fromMaybe emptyParsingTables (Map.lookup catName (categories ctx))
+        tokens_ctx = addParserTokens p ctx
+        -- Adds the parser as an indexed parser
+        -- using each of its possible first tokens as an index.
+        addIndexed :: Set Token -> ParserContext
+        addIndexed tks =
+            let newTables = foldr
+                    (\tk currTables -> currTables {trailingTable =
+                        insertTokenMap (trailingTable currTables) tk p})
+                    tables tks
+                in
+            tokens_ctx {categories =
                 Map.insert catName newTables (categories tokens_ctx)}
+        in
+    case firstTokens (info p) of
+    Tokens tks -> addIndexed tks
+    OptTokens tks -> addIndexed tks
+    _ ->
+        -- Add the parser as a non-indexed parser
+        let newTables = tables {trailingParsers = p : trailingParsers tables} in
+        tokens_ctx {categories =
+            Map.insert catName newTables (categories tokens_ctx)}

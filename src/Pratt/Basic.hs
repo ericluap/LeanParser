@@ -126,6 +126,7 @@ longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps =
     in order to get its priority and then calls `longestMatchFnAux`.
 -}
 longestMatchFn :: Maybe Syntax -> [Parser] -> ParserFn
+longestMatchFn _ [] _ s = mkError s "longestMatchFn: empty list"
 longestMatchFn maybeLeft ps c s =
     let startSize = length (syntax s)
         startLhsPrec = lhsPrec s
