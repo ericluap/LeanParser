@@ -7,7 +7,7 @@ module Parsers.Token where
 
 import Defs
 import Structures
-import Data.Char (isAlpha, isAlphaNum)
+import Data.Char (isAlpha, isAlphaNum, isDigit)
 
 {-
     Continue incrementing the position in the parser state until
@@ -189,13 +189,35 @@ identParseFn startPos tk = parse
             else
                 mkTokenAndFixPos startPos tk c s
 
+mkNodeToken :: SyntaxNodeKind -> Int -> ParserFn
+mkNodeToken kind startPos c s =
+    if hasError s then
+        s
+    else
+        let stopPos = pos s
+            val = extractSublist (inputString c) startPos stopPos
+            new_s = whitespace c s in
+        pushSyntax new_s (Node kind [Atom val])
+
+numberFn :: ParserFn
+numberFn c s =
+    let startPos = pos s
+        new_s = takeWhileFn isDigit c s in
+    mkNodeToken numLitKind startPos c new_s
+
 {-
     Add the next identifier or token to the
     top of the syntax list in the parser state.
 -}
 tokenFn :: ParserFn
 tokenFn c s =
-    let i = pos s
-        curr = getInputChar c i
-        tk = matchPrefix (inputString c) (ctxTokens c) i in
-    identParseFn i tk "anonymous" c s
+    let i = pos s in
+    if atEnd c i then
+        mkEOIError s
+    else
+        let curr = getInputChar c i in
+        if isDigit curr then
+            numberFn c s
+        else
+            let tk = matchPrefix (inputString c) (ctxTokens c) i in
+            identParseFn i tk "anonymous" c s

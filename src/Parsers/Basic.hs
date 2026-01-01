@@ -122,6 +122,27 @@ expectTokenFn k desc c s =
 identFn :: ParserFn
 identFn = expectTokenFn identKind "identifier"
 
+ident :: Parser
+ident = Parser {
+    fn = identFn,
+    info = ParserInfo {
+        collectTokens = id,
+        firstTokens = Tokens (Set.singleton identKind)
+    }
+}
+
+numFn :: ParserFn
+numFn = expectTokenFn numLitKind "numeral"
+
+num :: Parser
+num = Parser {
+    fn = numFn,
+    info = ParserInfo {
+        collectTokens = id,
+        firstTokens = Tokens (Set.singleton numLitKind)
+    }
+}
+
 restoreState :: ParserState -> Int -> Int -> ParserState
 restoreState s initialSize initialPos =
     let lengthDiff = length (syntax s) - initialSize in

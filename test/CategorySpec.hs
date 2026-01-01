@@ -10,21 +10,12 @@ import Category
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-identParser :: Parser
-identParser = Parser {
-    fn = identFn,
-    info = ParserInfo {
-        collectTokens = id,
-        firstTokens = Unknown
-    }
-}
-
 commandParser :: Parser
 commandParser =
-    leadingNode "def" 100 (identParser `andthen` symbol ":=" `andthen` identParser)
+    leadingNode "def" 100 (ident `andthen` symbol ":=" `andthen` ident)
 
 commandCategoryParser :: ParserFn
-commandCategoryParser = categoryParser "command"
+commandCategoryParser = fn (categoryParser "command" 0)
 
 commandTable :: PrattParsingTables
 commandTable = PrattParsingTables {
@@ -54,7 +45,7 @@ spec :: Spec
 spec = do
     describe "categoryParser" $ do
         it "calls prattParser for the given category" $ do
-            let commandCategoryParser = categoryParser "command"
+            let commandCategoryParser = fn (categoryParser "command" 0)
             let categoryParserRes = commandCategoryParser startContext startState
             let prattParserRes = prattParser "command" commandTable
                     startContext startState
@@ -91,7 +82,9 @@ spec = do
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
-            let nonindexedParser = commandParser
+            let nonindexedParser = commandParser {
+                info = (info commandParser) {firstTokens = Unknown}
+            }
             let res = addLeadingParser "command" nonindexedParser startContext
             let manualTable = commandTable {leadingParsers =
                 nonindexedParser : leadingParsers commandTable}
@@ -115,7 +108,7 @@ spec = do
                     categories = Map.singleton "command" commandTable
                 } 
                 let newContext = addLeadingParser "command" commandParser startContext
-                let parseRes = categoryParser "command" newContext startState
+                let parseRes = fn (categoryParser "command" 0) newContext startState
                 let manualRes = fn commandParser newContext startState
                 parseRes `shouldBe` manualRes
     describe "addTrailingParser" $ do
@@ -137,7 +130,9 @@ spec = do
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
-            let nonindexedParser = commandParser
+            let nonindexedParser = commandParser {
+                info = (info commandParser) {firstTokens = Unknown}
+            }
             let res = addTrailingParser "command" nonindexedParser startContext
             let manualTable = commandTable {trailingParsers =
                 nonindexedParser : trailingParsers commandTable}
@@ -164,10 +159,10 @@ spec = do
                 let leadingContext = addLeadingParser "command" commandParser
                         startContext
                 let typeParser = trailingNode "type" 100 100
-                        (symbol ":" `andthen` identParser)
+                        (symbol ":" `andthen` ident)
                 let finalContext = addTrailingParser "command" typeParser
                         leadingContext
-                let parseRes = categoryParser "command" finalContext startState
+                let parseRes = fn (categoryParser "command" 0) finalContext startState
                 let manualRes1 = fn commandParser finalContext startState
                 let manualRes2 = fn typeParser finalContext manualRes1
                 parseRes `shouldBe` manualRes2

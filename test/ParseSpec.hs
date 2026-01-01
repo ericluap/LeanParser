@@ -8,15 +8,6 @@ import Parsers.Token
 import Category
 import Pratt.PrecParsers
 
-identParser :: Parser
-identParser = Parser {
-    fn = identFn,
-    info = ParserInfo {
-        collectTokens = id,
-        firstTokens = Unknown
-    }
-}
-
 spec :: Spec
 spec = do
     describe "reverseSyntax" $ do
@@ -31,7 +22,7 @@ spec = do
                 inputString = "test := one\n test2 := two"
             }
             let cmdParser = leadingNode "def" 100
-                    (identParser `andthen` symbol ":=" `andthen` identParser)
+                    (ident `andthen` symbol ":=" `andthen` ident)
             let startContext = addLeadingParser "command" cmdParser emptyContext
             let initialState = ParserState {
                 syntax = [],
@@ -47,8 +38,8 @@ spec = do
             res `shouldBe` manualRes2
     describe "parse" $ do
         it "parses multiple commands" $ do
-            let cmdParser = leadingNode "def" 100 (identParser `andthen`
-                    symbol ":=" `andthen` identParser)
+            let cmdParser = leadingNode "def" 100 (ident `andthen`
+                    symbol ":=" `andthen` ident)
             let parsingRules = addLeadingParser "command" cmdParser emptyParsingRules
             let res = parse "test := hi\n test2 := hi2" parsingRules
             let manual = [Node "def" [Ident "test", Atom ":=", Ident "hi"],

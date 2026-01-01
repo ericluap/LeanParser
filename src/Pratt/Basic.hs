@@ -95,7 +95,10 @@ longestMatchStep maybeLeft startSize startLhsPrec startPos p c s =
     let starting_s = restoreState s startSize startPos
         end_s = runLongestMatchParser maybeLeft startLhsPrec p c starting_s
         in
-    if pos end_s > pos s then
+    -- It cannot be `>`. Because if you make it `>` and none of the parsers
+    -- make progress, then this will return the original state and
+    -- trailingLoop will loop forever.
+    if pos end_s >= pos s then
         end_s
     else
         s

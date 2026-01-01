@@ -25,23 +25,14 @@ startState = ParserState {
     lhsPrec = 0
 }
 
-identParser :: Parser
-identParser = Parser {
-    fn = identFn,
-    info = ParserInfo {
-        collectTokens = id,
-        firstTokens = Unknown
-    }
-}
-
 commandParser :: Parser
 commandParser =
-    leadingNode "def" 100 (identParser `andthen` symbol ":=" `andthen` identParser)
+    leadingNode "def" 100 (ident `andthen` symbol ":=" `andthen` ident)
 
 commandParserLong :: Parser
 commandParserLong =
-    leadingNode "def" 100 (identParser `andthen` symbol ":=" `andthen` identParser
-    `andthen` symbol ":" `andthen` identParser)
+    leadingNode "def" 100 (ident `andthen` symbol ":=" `andthen` ident
+    `andthen` symbol ":" `andthen` ident)
 
 spec :: Spec
 spec = do
@@ -54,8 +45,8 @@ spec = do
                 longestMatchRes `shouldBe` justRunningRes
         context "when given a single non-lhsPrec setting parser" $ do
             it "runs that parser and sets the lhsPrec to maxPrec" $ do
-                let justRunningRes = fn identParser startContext startState
-                let longestMatchRes = longestMatchFn Nothing [identParser]
+                let justRunningRes = fn ident startContext startState
+                let longestMatchRes = longestMatchFn Nothing [ident]
                         startContext startState
                 syntax longestMatchRes `shouldBe` syntax justRunningRes
                 pos longestMatchRes `shouldBe` pos justRunningRes
@@ -90,7 +81,7 @@ spec = do
                     ctxTokens = insert ":=" ":=" (insert ":" ":" empty),
                     categories = Map.empty
                 }
-            let defParser = leadingNode "eq" 100 (symbol ":=" `andthen` identParser)
+            let defParser = leadingNode "eq" 100 (symbol ":=" `andthen` ident)
             let testTables = PrattParsingTables {
                     leadingTable = insertTokenMap emptyTokenMap ":=" defParser,
                     leadingParsers = [],
@@ -103,7 +94,7 @@ spec = do
     describe "trailingLoop" $ do
         it "uses the non-indexed trailing parsers" $ do
             let trailingCmdParser = trailingNode "def" 100 100
-                    (symbol ":=" `andthen` identParser)
+                    (symbol ":=" `andthen` ident)
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi",
@@ -123,7 +114,7 @@ spec = do
             leadingRes `shouldBe` manualRes
         it "uses the indexed trailing parsers" $ do
             let trailingCmdParser = trailingNode "def" 100 100
-                    (symbol ":=" `andthen` identParser)
+                    (symbol ":=" `andthen` ident)
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi",
@@ -143,7 +134,7 @@ spec = do
             leadingRes `shouldBe` manualRes
         it "repeatedly matches trailing parsers" $ do
             let trailingCmdParser = trailingNode "def" 100 100
-                    (symbol ":=" `andthen` identParser)
+                    (symbol ":=" `andthen` ident)
             let startContext = ParserContext {
                     prec = 0,
                     inputString = ":= hi := hiagain",
@@ -165,7 +156,7 @@ spec = do
     describe "prattParser" $ do
         it "uses both leading and trailing parsers" $ do
             let trailingParser = trailingNode "type" 100 100
-                    (symbol ":" `andthen` identParser)
+                    (symbol ":" `andthen` ident)
             let testTables = PrattParsingTables {
                     leadingTable = emptyTokenMap,
                     leadingParsers = [commandParser],

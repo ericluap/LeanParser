@@ -25,6 +25,7 @@ library
   exposed-modules:
       Category
       Defs
+      LeanParser
       Parse
       Parsers.Basic
       Parsers.Token
@@ -60,11 +61,30 @@ executable PrattParser1-exe
     , hspec
   default-language: Haskell2010
 
+executable arithmetic
+  main-is: Arithmetic.hs
+  other-modules:
+      Paths_PrattParser1
+  autogen-modules:
+      Paths_PrattParser1
+  hs-source-dirs:
+      examples
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      PrattParser1
+    , base >=4.7 && <5
+    , containers
+    , hspec
+  default-language: Haskell2010
+
 test-suite PrattParser1-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Bugs
       CategorySpec
+      Parsers.BasicSpec
+      Parsers.TokenSpec
       ParseSpec
       Pratt.BasicSpec
       Paths_PrattParser1

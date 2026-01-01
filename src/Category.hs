@@ -16,11 +16,21 @@ import Data.Maybe (fromMaybe)
 
     For example, `categoryParser "command"` parses a single command.
 -}
-categoryParser :: String -> ParserFn
-categoryParser catName c s =
-    case Map.lookup catName (categories c) of
-    Nothing -> mkError s ("unknown parser category " ++ catName)
-    Just tables -> prattParser catName tables c s
+categoryParser :: String -> Int -> Parser
+categoryParser catName newPrec =
+    let parserFn c s = case Map.lookup catName (categories c) of
+            Nothing -> mkError s ("unknown parser category " ++ catName)
+            Just tables ->
+                let new_c = c {prec = newPrec} in
+                prattParser catName tables new_c s
+        in
+    Parser {
+        fn = parserFn,
+        info = ParserInfo {
+            collectTokens = id,
+            firstTokens = Unknown
+        }
+    }
 
 {-
     Add a single token to the `ctxTokens` in the parser context.
@@ -106,3 +116,9 @@ addTrailingParser catName p ctx =
         let newTables = tables {trailingParsers = p : trailingParsers tables} in
         tokens_ctx {categories =
             Map.insert catName newTables (categories tokens_ctx)}
+
+addLeadingParsers :: String -> [Parser] -> ParserContext -> ParserContext
+addLeadingParsers catName ps ctx = foldr (addLeadingParser catName) ctx ps
+
+addTrailingParsers :: String -> [Parser] -> ParserContext -> ParserContext
+addTrailingParsers catName ps ctx = foldr (addTrailingParser catName) ctx ps

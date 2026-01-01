@@ -24,11 +24,33 @@ reverseSyntax other = other
 -}
 parseAllCommands :: ParserFn
 parseAllCommands c s =
-    let result = (whitespace `andthenFn` categoryParser "command") c s in
+    let startPos = pos s
+        result = (whitespace `andthenFn` fn (categoryParser "command" 0)) c s in
     if hasError result || atEnd c (pos result) then
         result
+    else if startPos == pos result then
+        mkError result "no progress"
     else
         parseAllCommands c result
+
+runParserCategory :: String -> String -> ParserContext -> Either String [Syntax]
+runParserCategory input catName ruleCtx =
+    let initialCtx = ruleCtx {
+            prec = 0,
+            inputString = input
+        } 
+        initialState = ParserState {
+            syntax = [],
+            pos = 0,
+            errorMsg = Nothing,
+            lhsPrec = 0
+        }
+        result = (whitespace `andthenFn` fn (categoryParser catName 0))
+            initialCtx initialState 
+        in
+    case errorMsg result of
+    Just error -> Left error
+    Nothing -> Right $ reverse $ map reverseSyntax (syntax result)
 
 {-
     Given the input string and a parser context storing the parsing rules,

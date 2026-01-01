@@ -47,6 +47,15 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - PrattParser1
+  arithmetic:
+    main: Arithmetic.hs
+    source-dirs: examples
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - PrattParser1
 
 tests:
   PrattParser1-test:
