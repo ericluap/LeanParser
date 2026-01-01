@@ -75,7 +75,7 @@ spec = do
     describe "addLeadingParser" $ do
         it "adds indexed parser" $ do
             let indexedParser = symbol "test"
-            let res = addLeadingParser "command" indexedParser startContext
+            let Right res = addLeadingParser "command" indexedParser startContext
             let manualTable = commandTable {leadingTable =
                 insertTokenMap (leadingTable commandTable) "test" indexedParser}
             case Map.lookup "command" (categories res) of
@@ -86,13 +86,13 @@ spec = do
                         Map.keys leadingTokenMap `shouldBe` Map.keys manualTokenMap
         it "adds the tokens" $ do
             let indexedParser = symbol "test"
-            let res = addLeadingParser "command" indexedParser startContext
+            let Right res = addLeadingParser "command" indexedParser startContext
             let manualCtx = startContext {ctxTokens =
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
             let nonindexedParser = commandParser
-            let res = addLeadingParser "command" nonindexedParser startContext
+            let Right res = addLeadingParser "command" nonindexedParser startContext
             let manualTable = commandTable {leadingParsers =
                 nonindexedParser : leadingParsers commandTable}
             case Map.lookup "command" (categories res) of
@@ -114,7 +114,7 @@ spec = do
                     ctxTokens = empty,
                     categories = Map.singleton "command" commandTable
                 } 
-                let newContext = addLeadingParser "command" commandParser startContext
+                let Right newContext = addLeadingParser "command" commandParser startContext
                 let parseRes = categoryParser "command" newContext startState
                 let manualRes = fn commandParser newContext startState
                 parseRes `shouldBe` manualRes

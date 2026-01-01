@@ -50,10 +50,10 @@ addParserTokens p ctx =
     either as an indexed or non-indexed leading parser
     depending on the parser's `firstTokens`.
 -}
-addLeadingParser :: String -> Parser -> ParserContext -> ParserContext
+addLeadingParser :: String -> Parser -> ParserContext -> Either String ParserContext
 addLeadingParser catName p ctx =
     case Map.lookup catName (categories ctx) of
-    Nothing -> ctx
+    Nothing -> Left ("unknown parser category " ++ catName)
     Just tables ->
         let tokens_ctx = addParserTokens p ctx
             -- Adds the parser as an indexed parser
@@ -69,10 +69,10 @@ addLeadingParser catName p ctx =
                     Map.insert catName newTables (categories tokens_ctx)}
             in
         case firstTokens (info p) of
-        Tokens tks -> addIndexed tks
-        OptTokens tks -> addIndexed tks
+        Tokens tks -> Right (addIndexed tks)
+        OptTokens tks -> Right (addIndexed tks)
         _ ->
             -- Add the parser as a non-indexed parser
             let newTables = tables {leadingParsers = p : leadingParsers tables} in
-            tokens_ctx {categories =
+            Right tokens_ctx {categories =
                 Map.insert catName newTables (categories tokens_ctx)}
