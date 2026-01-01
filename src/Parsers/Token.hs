@@ -66,8 +66,10 @@ mkTokenAndFixPos startPos tk c s =
     Just tk ->
         let stopPos = startPos + length tk
             sNew = s {pos = stopPos} 
-            sNewWhitespace = whitespace c sNew in 
-        pushSyntax sNewWhitespace (Atom tk)
+            sNewWhitespace = whitespace c sNew
+            trailing = extractSublist (inputString c) stopPos
+                (pos sNewWhitespace) in 
+        pushSyntax sNewWhitespace (Atom (SourceInfo trailing) tk)
 
 {-
     Consider many unicode characters as being valid letters
@@ -149,8 +151,9 @@ mkIdResult startPos tk identVal c s =
         mkTokenAndFixPos startPos tk c s
     -- Otherwise, construct the identifier
     else
-        let new_s = whitespace c s in
-        pushSyntax new_s (Ident identVal)
+        let new_s = whitespace c s
+            trailing = extractSublist (inputString c) stopPos (pos new_s) in
+        pushSyntax new_s (Ident (SourceInfo trailing) identVal)
 
 {-
     Parse identifiers and tokens.
@@ -196,8 +199,9 @@ mkNodeToken kind startPos c s =
     else
         let stopPos = pos s
             val = extractSublist (inputString c) startPos stopPos
-            new_s = whitespace c s in
-        pushSyntax new_s (Node kind [Atom val])
+            new_s = whitespace c s 
+            trailing = extractSublist (inputString c) stopPos (pos new_s) in
+        pushSyntax new_s (Node kind [Atom (SourceInfo trailing) val])
 
 numberFn :: ParserFn
 numberFn c s =

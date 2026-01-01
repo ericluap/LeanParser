@@ -1,4 +1,4 @@
-module Main (main) where
+module Arithmetic (main) where
 
 import LeanParser
 

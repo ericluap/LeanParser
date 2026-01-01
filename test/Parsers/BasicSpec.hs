@@ -18,5 +18,5 @@ spec = do
                 lhsPrec = 0
             }
             let res = fn num startContext startState
-            let manual = Node numLitKind [Atom "123"]
+            let manual = Node numLitKind [Atom (SourceInfo " ") "123"]
             syntax res `shouldBe` [manual]

@@ -28,8 +28,8 @@ indexed map c s =
         in
     -- Extract the name of the next token and pass it to `find`
     case stx of
-    Right (Atom sym) -> find sym
-    Right (Ident _) -> find identKind
+    Right (Atom _ sym) -> find sym
+    Right (Ident _ _) -> find identKind
     Right (Node kind _) -> find kind
     Right _ -> (new_s, [])
     Left error_s -> (error_s, [])

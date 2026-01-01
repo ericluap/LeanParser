@@ -26,7 +26,7 @@ satisfySymbolFn p c s =
     else
         case syntax s_new of
         [] -> mkError s_new "no syntax in parser state"
-        (Atom sym) : _ ->
+        (Atom _ sym) : _ ->
             if p sym then
                 s_new
             else

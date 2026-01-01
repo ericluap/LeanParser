@@ -44,11 +44,23 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -main-is Arithmetic
     dependencies:
     - LeanParser
+  language:
+    main: Language.hs
+    source-dirs: examples
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -main-is Language
+    dependencies:
+    - LeanParser
+   
 
 tests:
-  PrattParser1-test:
+  LeanParser-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:

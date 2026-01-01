@@ -8,3 +8,5 @@ cradle:
       component: "LeanParser:test:LeanParser-test"
     - path: "./examples/Arithmetic.hs"
       component: "LeanParser:exe:arithmetic"
+    - path: "./examples/Language.hs"
+      component: "LeanParser:exe:language"

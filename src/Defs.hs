@@ -24,6 +24,14 @@ maxPrec :: Int
 maxPrec = 1024
 
 {-
+    Tracks the trailing whitespace after pieces of syntax.
+-}
+newtype SourceInfo = SourceInfo {
+    trailing :: String
+}
+    deriving (Show, Eq)
+
+{-
     A term of type `Syntax` is the result of parsing.
 
     `Node` represents a grouping of syntax with its `SyntaxNodeKind`
@@ -33,8 +41,8 @@ maxPrec = 1024
 -}
 data Syntax = Missing
     | Node SyntaxNodeKind [Syntax]
-    | Atom String
-    | Ident String
+    | Atom SourceInfo String
+    | Ident SourceInfo String
     deriving (Show, Eq)
 
 {-
@@ -164,8 +172,8 @@ getKind stx =
     case stx of
     Node kind _ -> kind
     Missing -> "missing"
-    Atom val -> val
-    Ident _ -> identKind
+    Atom _ val -> val
+    Ident _ _ -> identKind
 
 hasError :: ParserState -> Bool
 hasError s =

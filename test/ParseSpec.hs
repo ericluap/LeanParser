@@ -12,8 +12,11 @@ spec :: Spec
 spec = do
     describe "reverseSyntax" $ do
         it "reverses nested Node children" $ do
-            let start = Node "t" [Node "l" [Ident "hi", Atom "bye"], Atom "hi2"]
-            let manual = Node "t" [Atom "hi2", Node "l" [Atom "bye", Ident "hi"]]
+            let start = Node "t" [Node "l" [Ident (SourceInfo "") "hi",
+                        Atom (SourceInfo "") "bye"], Atom (SourceInfo "") "hi2"]
+            let manual = Node "t" [Atom (SourceInfo "") "hi2",
+                        Node "l" [Atom (SourceInfo "") "bye",
+                                Ident (SourceInfo "") "hi"]]
             let reversed = reverseSyntax start
             reversed `shouldBe` manual
     describe "parseAllCommands" $ do
@@ -42,7 +45,13 @@ spec = do
                     symbol ":=" `andthen` ident)
             let parsingRules = addLeadingParser "command" cmdParser emptyParsingRules
             let res = parse "test := hi\n test2 := hi2" parsingRules
-            let manual = [Node "def" [Ident "test", Atom ":=", Ident "hi"],
-                    Node "def" [Ident "test2", Atom ":=", Ident "hi2"]]
+            let manual = [
+                        Node "def" [Ident (SourceInfo " ") "test",
+                                Atom (SourceInfo " ") ":=",
+                                Ident (SourceInfo "\n ") "hi"
+                        ],
+                        Node "def" [ Ident (SourceInfo " ") "test2",
+                                Atom (SourceInfo " ") ":=",
+                                Ident (SourceInfo "") "hi2"]]
             res `shouldBe` Right manual
             
