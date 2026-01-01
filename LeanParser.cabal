@@ -42,20 +42,6 @@ library
     , hspec
   default-language: Haskell2010
 
-executable PrattParser1-exe
-  main-is: Main.hs
-  other-modules:
-      Paths_LeanParser
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      LeanParser
-    , base >=4.7 && <5
-    , containers
-    , hspec
-  default-language: Haskell2010
-
 executable arithmetic
   main-is: Arithmetic.hs
   other-modules:
