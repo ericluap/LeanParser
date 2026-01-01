@@ -30,7 +30,7 @@ identParser = Parser {
     fn = identFn,
     info = ParserInfo {
         collectTokens = id,
-        firstTokens = Epsilon
+        firstTokens = Unknown
     }
 }
 

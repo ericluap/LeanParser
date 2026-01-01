@@ -15,7 +15,7 @@ identParser = Parser {
     fn = identFn,
     info = ParserInfo {
         collectTokens = id,
-        firstTokens = Epsilon
+        firstTokens = Unknown
     }
 }
 
@@ -91,7 +91,7 @@ spec = do
                 insert "test" "test" (ctxTokens startContext)} 
             ctxTokens res `shouldBe` ctxTokens manualCtx
         it "adds non-indexed parser" $ do
-            let nonindexedParser = identParser
+            let nonindexedParser = commandParser
             let res = addLeadingParser "command" nonindexedParser startContext
             let manualTable = commandTable {leadingParsers =
                 nonindexedParser : leadingParsers commandTable}
@@ -100,3 +100,22 @@ spec = do
                 Just tables ->
                     length (leadingParsers tables) `shouldBe`
                         length (leadingParsers manualTable)
+        context "when a leading parser is added" $ do
+            it "uses the leading parser" $ do
+                let commandTable = PrattParsingTables {
+                    leadingTable = emptyTokenMap,
+                    leadingParsers = [],
+                    trailingTable = emptyTokenMap,
+                    trailingParsers = []
+                }
+                let startContext = ParserContext {
+                    prec = 0,
+                    inputString = "test := hi : Type",
+                    ctxTokens = empty,
+                    categories = Map.singleton "command" commandTable
+                } 
+                let newContext = addLeadingParser "command" commandParser startContext
+                let parseRes = categoryParser "command" newContext startState
+                let manualRes = fn commandParser newContext startState
+                parseRes `shouldBe` manualRes
+

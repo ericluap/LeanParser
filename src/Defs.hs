@@ -65,7 +65,10 @@ data ParserState = ParserState {
     of the parser. This is used to index in the parser in the
     Pratt parsing tables.
 
-    `Epsilon` means it has no first tokens
+    `Epsilon` means it has no first tokens and the first tokens of the
+    following parser should be used
+    `Unknown` means we do not know its first tokens and so must be
+    nonindexed
     `Tokens` contains a list of tokens, one of which will appear first
     `OptTokens` contains a list of tokens that could be first
     but don't need to be.
@@ -76,6 +79,7 @@ data ParserState = ParserState {
 -}
 data FirstTokens =
     Epsilon
+    | Unknown
     | Tokens (Set Token)
     | OptTokens (Set Token)
 

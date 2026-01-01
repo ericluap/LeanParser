@@ -48,7 +48,7 @@ addParserTokens p ctx =
     Add all used parser tokens to `ctxTokens` and then
     add the parser to the Pratt parsing tables for the given category
     either as an indexed or non-indexed leading parser
-    depending on the parsers `firstTokens`.
+    depending on the parser's `firstTokens`.
 -}
 addLeadingParser :: String -> Parser -> ParserContext -> ParserContext
 addLeadingParser catName p ctx =
