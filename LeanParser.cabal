@@ -1,25 +1,24 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
-name:           PrattParser1
+name:           LeanParser
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/ericluap/LeanParser#readme>
-homepage:       https://github.com/ericluap/PrattParser1#readme
-bug-reports:    https://github.com/ericluap/PrattParser1/issues
+homepage:       https://github.com/ericluap/LeanParser#readme
+bug-reports:    https://github.com/ericluap/LeanParser/issues
 author:         Eric Paul
 maintainer:     epaul9@illinois.edu
 copyright:      2025 Eric Paul
-license:        BSD-3-Clause
 build-type:     Simple
 extra-source-files:
     README.md
 
 source-repository head
   type: git
-  location: https://github.com/ericluap/PrattParser1
+  location: https://github.com/ericluap/LeanParser
 
 library
   exposed-modules:
@@ -33,9 +32,7 @@ library
       Pratt.PrecParsers
       Structures
   other-modules:
-      Paths_PrattParser1
-  autogen-modules:
-      Paths_PrattParser1
+      Paths_LeanParser
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -48,14 +45,12 @@ library
 executable PrattParser1-exe
   main-is: Main.hs
   other-modules:
-      Paths_PrattParser1
-  autogen-modules:
-      Paths_PrattParser1
+      Paths_LeanParser
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      PrattParser1
+      LeanParser
     , base >=4.7 && <5
     , containers
     , hspec
@@ -64,14 +59,12 @@ executable PrattParser1-exe
 executable arithmetic
   main-is: Arithmetic.hs
   other-modules:
-      Paths_PrattParser1
-  autogen-modules:
-      Paths_PrattParser1
+      Paths_LeanParser
   hs-source-dirs:
       examples
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      PrattParser1
+      LeanParser
     , base >=4.7 && <5
     , containers
     , hspec
@@ -87,16 +80,14 @@ test-suite PrattParser1-test
       Parsers.TokenSpec
       ParseSpec
       Pratt.BasicSpec
-      Paths_PrattParser1
-  autogen-modules:
-      Paths_PrattParser1
+      Paths_LeanParser
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      PrattParser1
+      LeanParser
     , base >=4.7 && <5
     , containers
     , hspec

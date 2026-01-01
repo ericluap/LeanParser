@@ -1,7 +1,6 @@
-name:                PrattParser1
+name:                LeanParser
 version:             0.1.0.0
-github:              "ericluap/PrattParser1"
-license:             BSD-3-Clause
+github:              "ericluap/LeanParser"
 author:              "Eric Paul"
 maintainer:          "epaul9@illinois.edu"
 copyright:           "2025 Eric Paul"
@@ -46,7 +45,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - PrattParser1
+    - LeanParser
   arithmetic:
     main: Arithmetic.hs
     source-dirs: examples
@@ -55,7 +54,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - PrattParser1
+    - LeanParser
 
 tests:
   PrattParser1-test:
@@ -66,6 +65,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - PrattParser1
+    - LeanParser
     build-tools:
     - hspec-discover
