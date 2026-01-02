@@ -6,6 +6,8 @@ module Parsers.Basic where
 
 import Defs
 import qualified Data.Set as Set
+import Data.Foldable (asum)
+import Data.Maybe (fromMaybe)
 import Parsers.Token
 
 getTopSyntax :: ParserState -> Maybe Syntax
@@ -173,3 +175,55 @@ peekToken c s =
         Nothing ->
             let error_s = mkError new_s "missing top syntax" in
             (restoreState new_s initialSize iniPos, Left error_s)
+
+{-
+    Get the most recently parsed `SourceInfo`.
+-}
+getTailInfoMaybe :: Syntax -> Maybe SourceInfo
+getTailInfoMaybe stx =
+    case stx of
+    Atom info _ -> Just info
+    Ident info _ -> Just info
+    Node _ children -> asum $ map getTailInfoMaybe children
+    _ -> Nothing
+
+{-
+    Get the most recently parsed `SourceInfo`.
+    Returns empty `SourceInfo` if there isn't one.
+-}
+getTailInfo :: Syntax -> SourceInfo
+getTailInfo stx = fromMaybe (SourceInfo "") (getTailInfoMaybe stx) 
+
+{-
+    Check that the trailing whitespace in the most
+    recently parsed `SourceInfo` has a line break.
+-}
+checkTailLinebreak :: Syntax -> Bool
+checkTailLinebreak stx = '\n' `elem` trailing (getTailInfo stx)
+
+{-
+    Checks that the most recently parsed syntax has a trailing
+    line break. Errors otherwise.
+-}
+checkLinebreakBeforeFn :: ParserFn
+checkLinebreakBeforeFn _ s =
+    case getTopSyntax s of
+    Nothing -> mkError s "line break"
+    Just stx ->
+        if checkTailLinebreak stx then
+            s
+        else
+            mkError s "line break"
+
+{-
+    Checks that the most recently parsed syntax has a trailing
+    line break. Errors otherwise.
+-}
+checkLinebreakBefore :: Parser
+checkLinebreakBefore = Parser {
+    fn = checkLinebreakBeforeFn,
+    info = ParserInfo {
+        collectTokens = id,
+        firstTokens = Epsilon
+    }
+}
