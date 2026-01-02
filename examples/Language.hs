@@ -26,7 +26,7 @@ typeSpec = leadingNode "typeSpec" maxPrec
 
 definition :: Parser
 definition = leadingNode "definition" maxPrec
-    (optional typeSpec `andthen`)-}
+    (optional typeSpec `andthen` checkLinebreakBefore)-}
 
 main :: IO ()
 main = do

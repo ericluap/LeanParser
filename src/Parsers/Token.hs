@@ -69,7 +69,7 @@ mkTokenAndFixPos startPos tk c s =
             sNewWhitespace = whitespace c sNew
             trailing = extractSublist (inputString c) stopPos
                 (pos sNewWhitespace) in 
-        pushSyntax sNewWhitespace (Atom (SourceInfo trailing) tk)
+        pushSyntax sNewWhitespace (Atom (SourceInfo trailing startPos) tk)
 
 {-
     Consider many unicode characters as being valid letters
@@ -153,7 +153,7 @@ mkIdResult startPos tk identVal c s =
     else
         let new_s = whitespace c s
             trailing = extractSublist (inputString c) stopPos (pos new_s) in
-        pushSyntax new_s (Ident (SourceInfo trailing) identVal)
+        pushSyntax new_s (Ident (SourceInfo trailing startPos) identVal)
 
 {-
     Parse identifiers and tokens.
@@ -201,7 +201,7 @@ mkNodeToken kind startPos c s =
             val = extractSublist (inputString c) startPos stopPos
             new_s = whitespace c s 
             trailing = extractSublist (inputString c) stopPos (pos new_s) in
-        pushSyntax new_s (Node kind [Atom (SourceInfo trailing) val])
+        pushSyntax new_s (Node kind [Atom (SourceInfo trailing startPos) val])
 
 numberFn :: ParserFn
 numberFn c s =

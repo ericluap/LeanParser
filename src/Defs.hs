@@ -8,6 +8,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Foldable (asum)
+import Data.Maybe (fromMaybe)
 
 type SyntaxNodeKind = String
 type Token = String
@@ -24,10 +26,15 @@ maxPrec :: Int
 maxPrec = 1024
 
 {-
-    Tracks the trailing whitespace after pieces of syntax.
+    Tracks information about the input string that was used
+    to create a piece of `Syntax`.
+
+    `trailing` tracks the trailing whitespace
+    `startPos` stores the starting position within the input string
 -}
-newtype SourceInfo = SourceInfo {
-    trailing :: String
+data SourceInfo = SourceInfo {
+    trailing :: String,
+    startPos :: Int
 }
     deriving (Show, Eq)
 
@@ -166,6 +173,36 @@ seqFirstTokens fst snd =
     (OptTokens s1, Tokens s2) -> OptTokens (Set.union s1 s2)
     (tks, _) -> tks
 
+toOptional :: FirstTokens -> FirstTokens
+toOptional fst =
+    case fst of
+    Tokens tks -> OptTokens tks
+    tks -> tks
+
+{-
+    Get the most recently parsed `SourceInfo`.
+-}
+getTailInfoMaybe :: Syntax -> Maybe SourceInfo
+getTailInfoMaybe stx =
+    case stx of
+    Atom info _ -> Just info
+    Ident info _ -> Just info
+    Node _ children -> asum $ map getTailInfoMaybe children
+    _ -> Nothing
+
+{-
+    Get the oldest parsed `SourceInfo`.
+-}
+getHeadInfoMaybe :: Syntax -> Maybe SourceInfo
+getHeadInfoMaybe stx =
+    case stx of
+    Atom info _ -> Just info
+    Ident info _ -> Just info
+    Node _ children -> asum . reverse $ map getHeadInfoMaybe children
+    _ -> Nothing
+
+getPosMaybe :: Syntax -> Maybe Int
+getPosMaybe stx = startPos <$> getHeadInfoMaybe stx
 
 getKind :: Syntax -> SyntaxNodeKind
 getKind stx =
@@ -193,6 +230,12 @@ popSyntax s =
     [] -> s
     _ : xs -> s {syntax = xs}
 
+getTopSyntax :: ParserState -> Maybe Syntax
+getTopSyntax s =
+    case syntax s of
+    [] -> Nothing
+    x : _ -> Just x
+
 setError :: ParserState -> Error -> ParserState
 setError s e = s { errorMsg = Just e }
 
@@ -203,8 +246,21 @@ setError s e = s { errorMsg = Just e }
 mkError :: ParserState -> Error -> ParserState
 mkError s e = pushSyntax (setError s e) Missing
 
+{-
+    Creates an error, pops the token, and resets the position
+    to be before the token was added.
+
+    Resetting the position is important as it makes this error
+    not consume input which is used by parser combinators like
+    `optional`.
+-}
 mkUnexpectedTokenError :: ParserState -> Error -> ParserState
-mkUnexpectedTokenError s = mkError (popSyntax s)
+mkUnexpectedTokenError s error =
+    let newPos = case getTopSyntax s of
+            Nothing -> 0
+            Just tk -> fromMaybe 0 (getPosMaybe tk)
+        new_s = s {pos = newPos} in
+    mkError (popSyntax new_s) error
 
 mkEOIError :: ParserState -> ParserState
 mkEOIError s = mkError s "unexpected end of input"

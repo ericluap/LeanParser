@@ -22,6 +22,6 @@ spec = do
                 let res = parse "12 * 3 + 65" rulesCtx
                 res `shouldBe` Right [Node "plus"
                     [Node "mul"
-                        [Node "num" [Atom (SourceInfo "") "12"],
-                            Atom (SourceInfo "") "*", Node "num" [Atom (SourceInfo "") "3"]],
-                    Atom (SourceInfo "") "+", Node "num" [Atom (SourceInfo "") "65"]]]
+                        [Node "num" [Atom (SourceInfo "" 0) "12"],
+                            Atom (SourceInfo "" 0) "*", Node "num" [Atom (SourceInfo "" 0) "3"]],
+                    Atom (SourceInfo "" 0) "+", Node "num" [Atom (SourceInfo "" 0) "65"]]]

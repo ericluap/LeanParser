@@ -102,7 +102,7 @@ spec = do
                     categories = Map.empty
                 }
             let trailingState = startState
-                    {syntax = [Ident (SourceInfo "") "test"], lhsPrec = 100}
+                    {syntax = [Ident (SourceInfo "" 0) "test"], lhsPrec = 100}
             let testTables = PrattParsingTables {
                 leadingTable = emptyTokenMap,
                 leadingParsers = [],
@@ -122,7 +122,7 @@ spec = do
                     categories = Map.empty
                 }
             let trailingState = startState
-                    {syntax = [Ident (SourceInfo "") "test"], lhsPrec = 100}
+                    {syntax = [Ident (SourceInfo "" 0) "test"], lhsPrec = 100}
             let testTables = PrattParsingTables {
                 leadingTable = emptyTokenMap,
                 leadingParsers = [],
@@ -142,7 +142,7 @@ spec = do
                     categories = Map.empty
                 }
             let trailingState = startState
-                    {syntax = [Ident (SourceInfo "") "test"], lhsPrec = 100}
+                    {syntax = [Ident (SourceInfo "" 0) "test"], lhsPrec = 100}
             let testTables = PrattParsingTables {
                 leadingTable = emptyTokenMap,
                 leadingParsers = [],

@@ -6,15 +6,7 @@ module Parsers.Basic where
 
 import Defs
 import qualified Data.Set as Set
-import Data.Foldable (asum)
-import Data.Maybe (fromMaybe)
 import Parsers.Token
-
-getTopSyntax :: ParserState -> Maybe Syntax
-getTopSyntax s =
-    case syntax s of
-    [] -> Nothing
-    x : _ -> Just x
 
 {-
     Parse the next token and check that it
@@ -71,8 +63,8 @@ symbol sym = Parser {
 andthenFn :: ParserFn -> ParserFn -> ParserFn
 andthenFn p q c s =
     let s_new = p c s in
-    if hasError s then
-        s
+    if hasError s_new then
+        s_new
     else
         q c s_new
 
@@ -177,29 +169,14 @@ peekToken c s =
             (restoreState new_s initialSize iniPos, Left error_s)
 
 {-
-    Get the most recently parsed `SourceInfo`.
--}
-getTailInfoMaybe :: Syntax -> Maybe SourceInfo
-getTailInfoMaybe stx =
-    case stx of
-    Atom info _ -> Just info
-    Ident info _ -> Just info
-    Node _ children -> asum $ map getTailInfoMaybe children
-    _ -> Nothing
-
-{-
-    Get the most recently parsed `SourceInfo`.
-    Returns empty `SourceInfo` if there isn't one.
--}
-getTailInfo :: Syntax -> SourceInfo
-getTailInfo stx = fromMaybe (SourceInfo "") (getTailInfoMaybe stx) 
-
-{-
     Check that the trailing whitespace in the most
     recently parsed `SourceInfo` has a line break.
 -}
 checkTailLinebreak :: Syntax -> Bool
-checkTailLinebreak stx = '\n' `elem` trailing (getTailInfo stx)
+checkTailLinebreak stx =
+    case getTailInfoMaybe stx of
+    Nothing -> False
+    Just tailInfo -> '\n' `elem` trailing tailInfo
 
 {-
     Checks that the most recently parsed syntax has a trailing
@@ -226,4 +203,34 @@ checkLinebreakBefore = Parser {
         collectTokens = id,
         firstTokens = Epsilon
     }
+}
+
+{-
+    If the given parser fails without consuming input,
+    then skip over it.
+-}
+optionalFn :: ParserFn -> ParserFn
+optionalFn p c s =
+    let initialSize = length (syntax s)
+        initialPos = pos s
+        new_s = p c s in
+    if hasError new_s && pos new_s == initialPos then
+        restoreState new_s initialSize initialPos
+    else
+        new_s
+
+optionalInfo :: ParserInfo -> ParserInfo
+optionalInfo p = ParserInfo {
+    collectTokens = collectTokens p,
+    firstTokens = toOptional (firstTokens p)
+}
+
+{-
+    If the given parser fails without consuming input,
+    then skip over it.
+-}
+optional :: Parser -> Parser
+optional p = Parser {
+    fn = optionalFn (fn p),
+    info = optionalInfo (info p)
 }

@@ -18,7 +18,7 @@ spec = do
                 lhsPrec = 0
             }
             let res = fn num startContext startState
-            let manual = Node numLitKind [Atom (SourceInfo " ") "123"]
+            let manual = Node numLitKind [Atom (SourceInfo " " 0) "123"]
             syntax res `shouldBe` [manual]
     describe "checkLinebreakBefore" $ do
         it "errors if there is not line break" $ do
@@ -49,3 +49,45 @@ spec = do
             let res = checkLinebreakBeforeFn startContext step
             let manual = Nothing
             errorMsg res `shouldBe` manual
+    describe "optional" $ do
+        it "succeeds if the optional parser succeeds" $ do
+            let startContext = emptyParsingRules {
+                inputString = "123 hi"
+            }
+            let startState = ParserState {
+                syntax = [],
+                pos = 0,
+                errorMsg = Nothing,
+                lhsPrec = 0
+            }
+            let res = fn (optional num) startContext startState
+            let manual = Node numLitKind [Atom (SourceInfo " " 0) "123"]
+            syntax res `shouldBe` [manual]
+        it "succeeds if the optional parser consumes no input" $ do
+            let startContext = emptyParsingRules {
+                inputString = "hi"
+            }
+            let startState = ParserState {
+                syntax = [],
+                pos = 0,
+                errorMsg = Nothing,
+                lhsPrec = 0
+            }
+            let parser = symbol ":" `andthen` num
+            let res = fn (optional parser) startContext startState
+            syntax res `shouldBe` []
+            errorMsg res `shouldBe` Nothing
+        it "fails if the optional parser consumes some input" $ do
+            let startContext = emptyParsingRules {
+                inputString = ": hi"
+            }
+            let startState = ParserState {
+                syntax = [],
+                pos = 0,
+                errorMsg = Nothing,
+                lhsPrec = 0
+            }
+            let parser = symbol ":" `andthen` num
+            let res = fn (optional parser) startContext startState
+            syntax res `shouldBe` [] 
+            errorMsg res `shouldBe` Nothing
