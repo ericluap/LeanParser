@@ -24,10 +24,15 @@ typeSpec :: Parser
 typeSpec = leadingNode "typeSpec" maxPrec
     (ident `andthen` symbol "::" `andthen` categoryParser term 0)
 
+definition :: Parser
+definition = leadingNode "definition" maxPrec
+    (ident `andthen` symbol ":=" `andthen` categoryParser term 0)
+
 addCommandParsers :: ParserContext -> ParserContext
 addCommandParsers rules =
     let trailingRules = addTrailingParsers command [] rules
-        allRules = addLeadingParsers command [typeSpec] trailingRules in
+        allRules = addLeadingParsers command
+            [typeSpec, definition] trailingRules in
     allRules
 
 main :: IO ()
@@ -35,6 +40,9 @@ main = do
     let termRules = addTermParsers emptyParsingRules
         allRules = addCommandParsers termRules
         res = parse "\n \
-                    \test :: Nat -> Nat -> Nat \n \
+                    \test :: Nat -> Nat -> Nat \n\
+                    \test := something \n\
                     \" allRules
-    print res
+    case res of
+        Left error -> print error
+        Right stx -> putStrLn (concatMap withParentheses stx)

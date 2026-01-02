@@ -316,3 +316,21 @@ emptyParsingTables = PrattParsingTables {
     trailingTable = emptyTokenMap,
     trailingParsers = []
 }
+
+{-
+    Display the given syntax with parentheses inserted for `Node`
+    and the `Node` syntax kind specified.
+-}
+withParentheses :: Syntax -> String
+withParentheses stx = go "" stx
+    where
+        go :: String -> Syntax -> String
+        go preTrail stx =
+            case stx of
+            Missing -> "Missing"
+            Atom (SourceInfo trailing _) val -> val ++ preTrail ++ trailing
+            Ident (SourceInfo trailing _) val -> val ++ preTrail ++ trailing
+            Node kind children ->
+                let childStr = concatMap (go "") (init children)
+                    lastChild = go (preTrail ++ ")") (last children) in
+                "(" ++ kind ++ "| " ++ childStr ++ lastChild
