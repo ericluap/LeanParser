@@ -234,3 +234,48 @@ optional p = Parser {
     fn = optionalFn (fn p),
     info = optionalInfo (info p)
 }
+
+{-
+    Run the given parser until it fails without consuming input.
+-}
+manyFn :: ParserFn -> ParserFn
+manyFn p c s =
+    let initialSize = length (syntax s)
+        initialPos = pos s
+        new_s = p c s in
+    if hasError new_s then
+        if pos new_s == initialPos then
+            restoreState new_s initialSize initialPos
+        else
+            new_s
+    else if pos new_s == initialPos then
+        mkError new_s "invalid 'many' usage, given parser did not consume anything"
+    else
+        manyFn p c new_s
+
+{-
+    Run the given parser until it fails without consuming input.
+-}
+many :: Parser -> Parser
+many p = Parser {
+    fn = manyFn (fn p),
+    info = (info p) {firstTokens = toOptional (firstTokens (info p))}
+}
+
+
+{-
+    Run the given parser once and then
+    until it fails without consuming input.
+-}
+many1Fn :: ParserFn -> ParserFn
+many1Fn p = p `andthenFn` manyFn p
+
+{-
+    Run the given parser once and then
+    until it fails without consuming input.
+-}
+many1 :: Parser -> Parser
+many1 p = Parser {
+    fn = many1Fn (fn p),
+    info = info p
+}

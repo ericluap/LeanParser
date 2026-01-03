@@ -84,6 +84,9 @@ runLongestMatchParser maybeLeft startLhsPrec p c s =
     the previously attempted parser. If so, keep the resuling state.
     Otherwise, keep the state of the previously attempted one.
 
+    If both parsers have the same length match, but the new one does not error
+    while the previous one does, take the new one.
+
     NOTE: This function differs from Lean's.
     Lean doesn't just compare the length of the match, but also whether or not
     there was an error and the given priority of each parser. If still the
@@ -95,10 +98,8 @@ longestMatchStep maybeLeft startSize startLhsPrec startPos p c s =
     let starting_s = restoreState s startSize startPos
         end_s = runLongestMatchParser maybeLeft startLhsPrec p c starting_s
         in
-    -- It cannot be `>`. Because if you make it `>` and none of the parsers
-    -- make progress, then this will return the original state and
-    -- trailingLoop will loop forever.
-    if pos end_s >= pos s then
+    if (pos end_s > pos s) ||
+        (pos end_s == pos s && hasError s && not (hasError end_s)) then
         end_s
     else
         s
@@ -125,17 +126,19 @@ longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps =
     Given a list of parsers, try running each of them and return the resulting
     state of the parser with the longest match.
 
-    NOTE: Since Lean uses priority as well, it runs the first parser manually
-    in order to get its priority and then calls `longestMatchFnAux`.
+    We have the run the first parser manually. This ensures that if none of
+    the parsers do very well, it will at least go with the result of running
+    the first one instead of going with the initial state.
 -}
 longestMatchFn :: Maybe Syntax -> [Parser] -> ParserFn
 longestMatchFn _ [] _ s = mkError s "longestMatchFn: empty list"
-longestMatchFn maybeLeft ps c s =
+longestMatchFn maybeLeft (p : ps) c s =
     let startSize = length (syntax s)
         startLhsPrec = lhsPrec s
         startPos = pos s
+        new_s = runLongestMatchParser maybeLeft startLhsPrec (fn p) c s
         in
-    longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps c s
+    longestMatchFnAux maybeLeft startSize startLhsPrec startPos ps c new_s
 
 {-
     Get all the possibly applicable leading parsers and then
