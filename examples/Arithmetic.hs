@@ -18,5 +18,7 @@ main = do
     let leadingCtx = addLeadingParser command num emptyParsingRules
     let rulesCtx = addTrailingParsers command [plus, mul] leadingCtx
     let res = parse "12 * 3 + 65 * 4" rulesCtx
-    print res
+    case res of
+        Left error -> putStrLn error
+        Right stx -> putStrLn (concatMap withParentheses stx)
     
