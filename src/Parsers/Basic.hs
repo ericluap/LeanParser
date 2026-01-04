@@ -1,6 +1,6 @@
 {-
     This file defines basic parsers like
-    `symbol`, `andthen`, and `expectTokenFn`.
+    `symbol`, `andthen`, and `many`.
 -}
 module Parsers.Basic where
 
@@ -318,4 +318,13 @@ withPosition :: Parser -> Parser
 withPosition p = Parser {
     info = info p,
     fn = \c s -> fn p (c {savedPos = Just (pos s)}) s
+}
+
+{-
+    Modify the context for this parser to have no saved position.
+-}
+withoutPosition :: Parser -> Parser
+withoutPosition p = Parser {
+    info = info p,
+    fn = \c s -> fn p (c {savedPos = Nothing}) s
 }

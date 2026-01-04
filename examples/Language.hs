@@ -23,8 +23,8 @@ list :: Parser
 list = leadingNode "list" maxPrec (symbol "List")
 
 paren :: Parser
-paren = leadingNode "paren" maxPrec
-    (symbol "(" `andthen` categoryParser term 0 `andthen` symbol ")")
+paren = leadingNode "paren" maxPrec (withoutPosition
+    (symbol "(" `andthen` categoryParser term 0 `andthen` symbol ")"))
 
 arrow :: Parser
 arrow = trailingNode "arrow" 25 0
