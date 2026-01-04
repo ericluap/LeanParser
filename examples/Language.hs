@@ -47,7 +47,6 @@ argument = checkColGt `andthen` categoryParser term argPrec
 -}
 app :: Parser
 app = trailingNode "app" leadPrec maxPrec (many1 argument)
---app = trailingNode "app" maxPrec 0 (categoryParser term 0)
 
 addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
@@ -81,6 +80,6 @@ main = do
     let allRules = addCommandParsers termRules
     let (maybeError, syntax) = parse "\n \
                     \test :: Nat → Nat → Nat\n\
-                    \test := fun x : Nat . x 2" allRules
+                    \test := fun x : Nat . x 2 y" allRules
     putStrLn (concatMap withParentheses syntax)
     putStrLn ("Errors: " ++ show maybeError)
