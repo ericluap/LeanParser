@@ -4,6 +4,7 @@
 module Defs where
 
 import Structures
+import Position
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
@@ -128,20 +129,24 @@ type ParserCategories = Map String PrattParsingTables
 
 type TokenTable = Trie Token
 
-{-
-    `prec` determines what parser are allowed to run
-    (any parser that calls `checkPrec` will only run if its
-    precedence is greater than or equal to this one)
-    `inputString` is the entire string we are parsing
-    `ctxTokens` stores the possible tokens we can parse
-    `rules` stores all the parsing rules
-    (the equivalent of `Parser.Extension.State` in Lean)
--}
+
 data ParserContext = ParserContext {
+    -- Determines what parser are allowed to run
+    -- (any parser that calls `checkPrec` will only run if its
+    -- precedence is greater than or equal to this one)
     prec :: Int,
+    -- The entire string we are parsing
     inputString :: String,
+    -- Stores the possible tokens we can parse (all reserved symbols)
     ctxTokens :: TokenTable,
-    categories :: ParserCategories
+    -- Stores all the parsing rules
+    categories :: ParserCategories,
+    -- Stores the locations of all newlines in the input string
+    -- in order to determine the column of a given position
+    fileMap :: FileMap,
+    -- Stores an index into the input string. Used as reference by parsers
+    -- like `checkColGt`.
+    savedPos :: Maybe Int
 }
 
 {-
@@ -302,7 +307,9 @@ emptyParsingRules = ParserContext {
     prec = 0,
     inputString = "",
     ctxTokens = empty,
-    categories = Map.empty
+    categories = Map.empty,
+    fileMap = fileMapOfString "",
+    savedPos = Nothing
 }
 
 {-

@@ -38,13 +38,16 @@ fun = leadingNode "fun" maxPrec
     (symbol "fun" `andthen` funBinder `andthen` symbol "." `andthen`
     categoryParser term 0)
 
+argument :: Parser
+argument = checkColGt `andthen` categoryParser term argPrec
+
 {-
     Since `lhsPrec` is `maxPrec`, the lhs cannot be an argument or
     an application. Since the rhs is `argPrec`, it cannot be an application.
 -}
 app :: Parser
---app = trailingNode "app" leadPrec maxPrec (many1 (categoryParser term argPrec))
-app = trailingNode "app" maxPrec 0 (categoryParser term 0)
+app = trailingNode "app" leadPrec maxPrec (many1 argument)
+--app = trailingNode "app" maxPrec 0 (categoryParser term 0)
 
 addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
@@ -58,12 +61,12 @@ command :: String
 command = "command"
 
 typeSpec :: Parser
-typeSpec = leadingNode "typeSpec" maxPrec
-    (ident `andthen` symbol "::" `andthen` categoryParser term 0)
+typeSpec = leadingNode "typeSpec" maxPrec (withPosition
+    (ident `andthen` symbol "::" `andthen` categoryParser term 0))
 
 definition :: Parser
-definition = leadingNode "definition" maxPrec
-    (ident `andthen` symbol ":=" `andthen` categoryParser term 0)
+definition = leadingNode "definition" maxPrec (withPosition
+    (ident `andthen` symbol ":=" `andthen` categoryParser term 0))
 
 addCommandParsers :: ParserContext -> ParserContext
 addCommandParsers rules =
@@ -75,11 +78,9 @@ addCommandParsers rules =
 main :: IO ()
 main = do
     let termRules = addTermParsers emptyParsingRules
-        allRules = addCommandParsers termRules
-        res = parse "\n \
-                    \test :: Nat → Nat → Nat \n\
-                    \test := f x \n\
-                    \" allRules
-    case res of
-        Left error -> print error
-        Right stx -> putStrLn (concatMap withParentheses stx)
+    let allRules = addCommandParsers termRules
+    let (maybeError, syntax) = parse "\n \
+                    \test :: Nat → Nat → Nat\n\
+                    \test := fun x : Nat . x 2" allRules
+    putStrLn (concatMap withParentheses syntax)
+    putStrLn ("Errors: " ++ show maybeError)

@@ -17,8 +17,6 @@ main :: IO ()
 main = do
     let leadingCtx = addLeadingParser command num emptyParsingRules
     let rulesCtx = addTrailingParsers command [plus, mul] leadingCtx
-    let res = parse "12 * 3 + 65 * 4" rulesCtx
-    case res of
-        Left error -> putStrLn error
-        Right stx -> putStrLn (concatMap withParentheses stx)
-    
+    let (maybeError, syntax) = parse "12 * 3 + 65 * 4" rulesCtx
+    putStrLn (concatMap withParentheses syntax)
+    putStrLn ("Errors: " ++ show maybeError)

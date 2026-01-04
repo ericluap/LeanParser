@@ -9,6 +9,7 @@ import Defs
 import Category (categoryParser)
 import Parsers.Basic (andthenFn)
 import Parsers.Token (whitespace)
+import Position (fileMapOfString)
 
 {-
     Reverse all the children of any `Node` appearing in the syntax.
@@ -33,12 +34,17 @@ parseAllCommands c s =
     else
         parseAllCommands c result
 
+updateCtxWithInputString :: String -> ParserContext -> ParserContext
+updateCtxWithInputString input ctx = ctx {
+        prec = 0,
+        inputString = input,
+        fileMap = fileMapOfString input,
+        savedPos = Nothing
+    } 
+
 runParserCategory :: String -> String -> ParserContext -> Either String [Syntax]
 runParserCategory input catName ruleCtx =
-    let initialCtx = ruleCtx {
-            prec = 0,
-            inputString = input
-        } 
+    let initialCtx = updateCtxWithInputString input ruleCtx
         initialState = ParserState {
             syntax = [],
             pos = 0,
@@ -56,20 +62,16 @@ runParserCategory input catName ruleCtx =
     Given the input string and a parser context storing the parsing rules,
     parse all the commands in the file.
 -}
-parse :: String -> ParserContext -> Either String [Syntax]
+parse :: String -> ParserContext -> (Maybe Error, [Syntax])
 parse input ruleCtx =
-    let initialCtx = ruleCtx {
-            prec = 0,
-            inputString = input
-        } 
+    let initialCtx = updateCtxWithInputString input ruleCtx
         initialState = ParserState {
             syntax = [],
             pos = 0,
             errorMsg = Nothing,
             lhsPrec = 0
         }
-        result = parseAllCommands initialCtx initialState 
+        result = parseAllCommands initialCtx initialState
+        reversedSyntax = reverse $ map reverseSyntax (syntax result)
         in
-    case errorMsg result of
-    Just error -> Left error
-    Nothing -> Right $ reverse $ map reverseSyntax (syntax result)
+    (errorMsg result, reversedSyntax)

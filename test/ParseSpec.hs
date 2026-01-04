@@ -53,5 +53,5 @@ spec = do
                         Node "def" [ Ident (SourceInfo " " 12) "test2",
                                 Atom (SourceInfo " " 18) ":=",
                                 Ident (SourceInfo "" 21) "hi2"]]
-            res `shouldBe` Right manual
+            res `shouldBe` (Nothing, manual)
             

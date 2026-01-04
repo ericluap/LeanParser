@@ -4,4 +4,6 @@
 parsing functions to a category
 - `Defs.hs` has the basic definitions used throughout the parser
 - `Parse.hs` defines entry parsing function
+- `Position.hs` defines functions for getting the column of the current
+position.
 - `Structures.hs` defines data structures

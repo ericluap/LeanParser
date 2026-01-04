@@ -5,6 +5,7 @@ module Bugs (spec) where
 
 import Test.Hspec
 import LeanParser
+import Position
 import qualified Data.Map as Map
 
 spec :: Spec
@@ -20,8 +21,8 @@ spec = do
                 let leadingCtx = addLeadingParser command num emptyParsingRules
                 let rulesCtx = addTrailingParsers command [plus, mul] leadingCtx
                 let res = parse "12 * 3 + 65" rulesCtx
-                res `shouldBe` Right [Node "plus"
+                res `shouldBe` (Nothing, [Node "plus"
                     [Node "mul"
                         [Node "num" [Atom (SourceInfo "" 0) "12"],
                             Atom (SourceInfo "" 0) "*", Node "num" [Atom (SourceInfo "" 0) "3"]],
-                    Atom (SourceInfo "" 0) "+", Node "num" [Atom (SourceInfo "" 0) "65"]]]
+                    Atom (SourceInfo "" 0) "+", Node "num" [Atom (SourceInfo "" 0) "65"]]])

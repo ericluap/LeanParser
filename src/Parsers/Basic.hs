@@ -5,6 +5,7 @@
 module Parsers.Basic where
 
 import Defs
+import Position
 import qualified Data.Set as Set
 import Parsers.Token
 
@@ -278,4 +279,43 @@ many1 :: Parser -> Parser
 many1 p = Parser {
     fn = many1Fn (fn p),
     info = info p
+}
+
+{-
+    Check that the current column is greater than
+    that of the saved position.
+-}
+checkColGtFn :: ParserFn
+checkColGtFn c s =
+    case savedPos c of
+    Nothing -> s
+    Just savedPos ->
+        let savedPosition = toPosition (fileMap c) savedPos
+            currPosition = toPosition (fileMap c) (pos s) in
+        if column currPosition > column savedPosition then
+            s
+        else
+            mkError s ("checkColGt " ++ show (pos s) ++ ", " ++ show currPosition ++ ", " ++ show savedPosition)
+
+{-
+    Check that the current column is greater than
+    that of the saved position.
+-}
+checkColGt :: Parser
+checkColGt = Parser {
+    fn = checkColGtFn,
+    info = ParserInfo {
+        collectTokens = id,
+        firstTokens = Epsilon
+    }
+}
+
+{-
+    Modify the context for this parser to have the saved position
+    be that at the start of running the parser.
+-}
+withPosition :: Parser -> Parser
+withPosition p = Parser {
+    info = info p,
+    fn = \c s -> fn p (c {savedPos = Just (pos s)}) s
 }

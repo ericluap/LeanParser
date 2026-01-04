@@ -28,6 +28,7 @@ library
       Parse
       Parsers.Basic
       Parsers.Token
+      Position
       Pratt.Basic
       Pratt.PrecParsers
       Structures
@@ -81,6 +82,7 @@ test-suite LeanParser-test
       Parsers.BasicSpec
       Parsers.TokenSpec
       ParseSpec
+      PositionSpec
       Pratt.BasicSpec
       Paths_LeanParser
   hs-source-dirs:
