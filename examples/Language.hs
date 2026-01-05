@@ -19,6 +19,12 @@ term = "term"
 nat :: Parser
 nat = leadingNode "nat" maxPrec (symbol "Nat")
 
+succNat :: Parser
+succNat = leadingNode "succ" maxPrec (symbol "S")
+
+recNat :: Parser
+recNat = leadingNode "recNat" maxPrec (symbol "recNat")
+
 list :: Parser
 list = leadingNode "list" maxPrec (symbol "List")
 
@@ -65,7 +71,7 @@ addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
     let trailingRules = addTrailingParsers term [arrow, app] rules
         allRules = addLeadingParsers term
-            [ident, num, nat, paren, fun] trailingRules in
+            [ident, num, nat, paren, fun, recNat, succNat] trailingRules in
     allRules
 
 {---- Command parsers ----}
@@ -93,6 +99,10 @@ main = do
     let allRules = addCommandParsers termRules
     let (maybeError, syntax) = parse "\n\
                     \test :: Nat → Nat → Nat\n\
-                    \test := fun x : Nat . x 2 y" allRules
+                    \test := fun x : Nat . x 2 y\n\
+                    \\n\
+                    \num :: Nat\n\
+                    \num := recNat 0 (fun x : Nat . fun ih : Nat . S (S ih)) \n\
+                    \  5" allRules
     putStrLn (concatMap withParentheses syntax)
     putStrLn ("Errors: " ++ show maybeError)
