@@ -39,6 +39,20 @@ listCons :: Parser
 listCons = trailingNode "cons" 67 68
     (symbol "::" `andthen` categoryParser term 67)
 
+{-- Stream parsers --}
+stream :: Parser
+stream = leadingNode "stream" maxPrec (symbol "Stream")
+
+fby :: Parser
+fby = trailingNode "fby" 65 66 (symbol "fby" `andthen` categoryParser term 66)
+
+{-- Later parsers --}
+later :: Parser
+later = leadingNode "later" 100 (symbol "▹" `andthen` categoryParser term 100)
+
+next :: Parser
+next = leadingNode "next" 80 (symbol "next" `andthen` categoryParser term 80)
+
 paren :: Parser
 paren = leadingNode "paren" maxPrec (withoutPosition
     (symbol "(" `andthen` categoryParser term 0 `andthen` symbol ")"))
@@ -80,9 +94,11 @@ app = trailingNode "app" leadPrec maxPrec (many1 argument)
 
 addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
-    let trailingRules = addTrailingParsers term [arrow, app, listCons] rules
+    let trailingRules = addTrailingParsers term [arrow, app, listCons, fby]
+            rules
         allRules = addLeadingParsers term
-            [ident, num, nat, paren, fun, recNat, succNat, bracketList]
+            [ident, num, nat, paren, fun, recNat, succNat, bracketList, stream,
+            later]
             trailingRules in
     allRules
 
@@ -109,14 +125,7 @@ main :: IO ()
 main = do
     let termRules = addTermParsers emptyParsingRules
     let allRules = addCommandParsers termRules
-    let (maybeError, syntax) = parse "\n\
-                    \test : Nat → Nat → Nat\n\
-                    \test := fun x : Nat . x 2 y\n\
-                    \\n\
-                    \num : Nat\n\
-                    \num := recNat 0 (fun x : Nat . fun ih : Nat . S (S ih)) \n\
-                    \  5\n\
-                    \list : List Nat\n\
-                    \list := 3 :: 4 :: [5, 6, 7]\n" allRules
+    input <- readFile "examples/LanguageInput.txt"
+    let (maybeError, syntax) = parse input allRules
     putStrLn (concatMap withParentheses syntax)
     putStrLn ("Errors: " ++ show maybeError)
