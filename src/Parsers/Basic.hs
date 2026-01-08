@@ -238,6 +238,8 @@ optional p = Parser {
 
 {-
     Run the given parser until it fails without consuming input.
+
+    NOTE: Does not group the resulting syntax under a single node.
 -}
 manyFn :: ParserFn -> ParserFn
 manyFn p c s =
@@ -256,6 +258,8 @@ manyFn p c s =
 
 {-
     Run the given parser until it fails without consuming input.
+
+    NOTE: Does not group the resulting syntax under a single node.
 -}
 many :: Parser -> Parser
 many p = Parser {
@@ -267,6 +271,8 @@ many p = Parser {
 {-
     Run the given parser once and then
     until it fails without consuming input.
+
+    NOTE: Does not group the resulting syntax under a single node.
 -}
 many1Fn :: ParserFn -> ParserFn
 many1Fn p = p `andthenFn` manyFn p
@@ -327,4 +333,59 @@ withoutPosition :: Parser -> Parser
 withoutPosition p = Parser {
     info = info p,
     fn = \c s -> fn p (c {savedPos = Nothing}) s
+}
+
+{-
+    Repeatedly run the parser `p` and then `sep`.
+    If `sep` fails, then restore.
+    If `p` fails the very first time and `isFirstOptional`, then restore.
+    Otherwise, error.
+
+    NOTE: Does not group the resulting syntax under a single node.
+-}
+sepByFnAux :: ParserFn -> ParserFn -> Bool -> Bool -> ParserFn
+sepByFnAux p sep allowTrailingSep isFirstOptional = go isFirstOptional
+    where
+        go :: Bool -> ParserFn
+        go restoreOnError c s =
+            let size = length (syntax s)
+                position = pos s
+                new_s = p c s in
+            if hasError new_s then
+                if pos new_s > position then
+                    new_s
+                else if restoreOnError then
+                    restoreState new_s size position
+                else
+                    pushSyntax new_s Missing
+            else
+                let size = length (syntax new_s)
+                    position = pos new_s
+                    afterSep_s = sep c new_s in
+                if hasError afterSep_s then
+                    restoreState afterSep_s size position
+                else
+                    go allowTrailingSep c afterSep_s
+
+sepByFn :: Bool -> ParserFn -> ParserFn -> ParserFn
+sepByFn allowTrailingSep p sep = sepByFnAux p sep allowTrailingSep True
+
+sepByInfo :: ParserInfo -> ParserInfo -> ParserInfo
+sepByInfo p sep = ParserInfo {
+    collectTokens = collectTokens p . collectTokens sep,
+    firstTokens = toOptional (firstTokens p)
+}
+
+{-
+    Repeatedly run the parser `p` and then `sep`.
+    If `sep` fails, then restore.
+    If `p` fails the very first time and `isFirstOptional`, then restore.
+    Otherwise, error.
+
+    NOTE: Does not group the resulting syntax under a single node.
+-}
+sepBy :: Parser -> Parser -> Parser
+sepBy p sep = Parser {
+    info = sepByInfo (info p) (info sep),
+    fn = sepByFn False (fn p) (fn sep)
 }

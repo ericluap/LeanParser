@@ -16,6 +16,7 @@ minPrec = 10
 term :: String
 term = "term"
 
+{-- Nat parsers --}
 nat :: Parser
 nat = leadingNode "nat" maxPrec (symbol "Nat")
 
@@ -25,8 +26,18 @@ succNat = leadingNode "succ" maxPrec (symbol "S")
 recNat :: Parser
 recNat = leadingNode "recNat" maxPrec (symbol "recNat")
 
+{-- List parsers --}
 list :: Parser
 list = leadingNode "list" maxPrec (symbol "List")
+
+bracketList :: Parser
+bracketList = leadingNode "bracketList" maxPrec
+    (symbol "[" `andthen` sepBy (categoryParser term 0) (symbol ",")
+    `andthen` symbol "]")
+
+listCons :: Parser
+listCons = trailingNode "cons" 67 68
+    (symbol "::" `andthen` categoryParser term 67)
 
 paren :: Parser
 paren = leadingNode "paren" maxPrec (withoutPosition
@@ -69,9 +80,10 @@ app = trailingNode "app" leadPrec maxPrec (many1 argument)
 
 addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
-    let trailingRules = addTrailingParsers term [arrow, app] rules
+    let trailingRules = addTrailingParsers term [arrow, app, listCons] rules
         allRules = addLeadingParsers term
-            [ident, num, nat, paren, fun, recNat, succNat] trailingRules in
+            [ident, num, nat, paren, fun, recNat, succNat, bracketList]
+            trailingRules in
     allRules
 
 {---- Command parsers ----}
@@ -80,7 +92,7 @@ command = "command"
 
 typeSpec :: Parser
 typeSpec = leadingNode "typeSpec" maxPrec (withPosition
-    (ident `andthen` symbol "::" `andthen` categoryParser term 0))
+    (ident `andthen` symbol ":" `andthen` categoryParser term 0))
 
 definition :: Parser
 definition = leadingNode "definition" maxPrec (withPosition
@@ -98,11 +110,13 @@ main = do
     let termRules = addTermParsers emptyParsingRules
     let allRules = addCommandParsers termRules
     let (maybeError, syntax) = parse "\n\
-                    \test :: Nat → Nat → Nat\n\
+                    \test : Nat → Nat → Nat\n\
                     \test := fun x : Nat . x 2 y\n\
                     \\n\
-                    \num :: Nat\n\
+                    \num : Nat\n\
                     \num := recNat 0 (fun x : Nat . fun ih : Nat . S (S ih)) \n\
-                    \  5" allRules
+                    \  5\n\
+                    \list : List Nat\n\
+                    \list := 3 :: 4 :: [5, 6, 7]\n" allRules
     putStrLn (concatMap withParentheses syntax)
     putStrLn ("Errors: " ++ show maybeError)
