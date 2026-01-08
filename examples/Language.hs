@@ -36,22 +36,21 @@ bracketList = leadingNode "bracketList" maxPrec
     `andthen` symbol "]")
 
 listCons :: Parser
-listCons = trailingNode "cons" 67 68
-    (symbol "::" `andthen` categoryParser term 67)
+listCons = infixRight "cons" 67 (symbol "::") term
 
 {-- Stream parsers --}
 stream :: Parser
 stream = leadingNode "stream" maxPrec (symbol "Stream")
 
 fby :: Parser
-fby = trailingNode "fby" 65 66 (symbol "fby" `andthen` categoryParser term 66)
+fby = infixOp "fby" 65 (symbol "fby") term
 
 {-- Later parsers --}
 later :: Parser
-later = leadingNode "later" 100 (symbol "▹" `andthen` categoryParser term 100)
+later = prefix "later" 100 (symbol "▹") term
 
 next :: Parser
-next = leadingNode "next" 80 (symbol "next" `andthen` categoryParser term 80)
+next = leadingNode "next" maxPrec (symbol "next")
 
 paren :: Parser
 paren = leadingNode "paren" maxPrec (withoutPosition

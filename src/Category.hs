@@ -7,6 +7,8 @@ module Category where
 import Defs
 import Structures
 import Pratt.Basic
+import Pratt.PrecParsers
+import Parsers.Basic
 import qualified Data.Map as Map
 import Data.Set (Set)
 import Data.Maybe (fromMaybe)
@@ -122,3 +124,21 @@ addLeadingParsers catName ps ctx = foldr (addLeadingParser catName) ctx ps
 
 addTrailingParsers :: String -> [Parser] -> ParserContext -> ParserContext
 addTrailingParsers catName ps ctx = foldr (addTrailingParser catName) ctx ps
+
+{-
+    Add a right associative operator of precedence `prec`.
+-}
+infixRight :: SyntaxNodeKind -> Int -> Parser -> SyntaxNodeKind -> Parser
+infixRight kind prec p afterKind = trailingNode kind prec (prec + 1)
+    (p `andthen` categoryParser afterKind prec)
+
+{-
+    Add a nonassociative operator of precedence `prec`.
+-}
+infixOp :: SyntaxNodeKind -> Int -> Parser -> SyntaxNodeKind -> Parser
+infixOp kind prec p afterKind = trailingNode kind prec (prec + 1)
+    (p `andthen` categoryParser afterKind (prec + 1))
+
+prefix :: SyntaxNodeKind -> Int -> Parser -> SyntaxNodeKind -> Parser
+prefix kind prec p afterKind = leadingNode kind prec
+    (p `andthen` categoryParser afterKind prec)
