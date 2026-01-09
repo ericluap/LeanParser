@@ -11,7 +11,7 @@ spec = do
             let res = fileMapOfString str
             let manual = FileMap {
                 source = str,
-                positions = [0,4,10,18,19]
+                positions = [0,5,11,19,19]
             }
             res `shouldBe` manual
     describe "toPosition" $ do
@@ -21,6 +21,6 @@ spec = do
             let res = toPosition fileMap 8
             let manual = Position {
                 line = 1,
-                column = 4
+                column = 3
             }
             res `shouldBe` manual

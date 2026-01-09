@@ -19,7 +19,7 @@ data Position = Position {
     deriving (Show, Eq)
 
 {-
-    Stores the locations of newlines in the input string.
+    Stores the locations of the beginning of each line in the input string.
 
     This is used to quickly convert a position in the input string
     to a `Position`.
@@ -35,7 +35,7 @@ data FileMap = FileMap {
     deriving (Show, Eq)
 
 {-
-    Store the positions of all the newlines in the given string.
+    Store the positions of all the line beginnings in the given string.
     It also stores the positions 0 and `length s`.
 -}
 fileMapOfString :: String -> FileMap
@@ -46,11 +46,12 @@ fileMapOfString s = go 0 [0]
             if currPos >= length s then
                 FileMap {source = s, positions = reverse (currPos : ps)}
             else
-                let currChar = s !! currPos in
+                let currChar = s !! currPos
+                    nextPos = currPos + 1 in
                 if currChar == '\n' then
-                    go (currPos + 1) (currPos : ps)
+                    go nextPos (nextPos : ps)
                 else
-                    go (currPos + 1) ps
+                    go nextPos ps
 
 {-
     Find the largest index `i` such that `ls[i] ≤ x`.

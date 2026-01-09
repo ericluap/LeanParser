@@ -26,3 +26,14 @@ spec = do
                         [Node "num" [Atom (SourceInfo "" 0) "12"],
                             Atom (SourceInfo "" 0) "*", Node "num" [Atom (SourceInfo "" 0) "3"]],
                     Atom (SourceInfo "" 0) "+", Node "num" [Atom (SourceInfo "" 0) "65"]]])
+    describe "toPosition in FileMap" $ do
+        it "gets correct column number for first line" $ do
+            let input = "first\nsecond"
+            let fileMap = fileMapOfString input
+            let pos1 = toPosition fileMap 0
+            let manual1 = Position {line = 0, column = 0}
+            pos1 `shouldBe` manual1
+
+            let pos2 = toPosition fileMap 6
+            let manual2 = Position {line = 1, column = 0}
+            pos2 `shouldBe` manual2
