@@ -133,6 +133,13 @@ infixRight kind prec p afterKind = trailingNode kind prec (prec + 1)
     (p `andthen` categoryParser afterKind prec)
 
 {-
+    Add a left associative operator of precedence `prec`.
+-}
+infixLeft :: SyntaxNodeKind -> Int -> Parser -> SyntaxNodeKind -> Parser
+infixLeft kind prec p afterKind = trailingNode kind prec prec
+    (p `andthen` categoryParser afterKind (prec + 1))
+
+{-
     Add a nonassociative operator of precedence `prec`.
 -}
 infixOp :: SyntaxNodeKind -> Int -> Parser -> SyntaxNodeKind -> Parser
