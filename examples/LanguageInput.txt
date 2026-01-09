@@ -19,3 +19,9 @@ stream2 := fun (x : Stream Nat) . 1 fby next (2 fby x)
 
 fbkStream : Stream Nat
 fbkStream := fbk (s : ▹ Stream Nat) . <0 fby s, 1 fby s>
+
+headStream : Stream Nat → Nat
+headStream := fun (x : Stream Nat) . hd x
+
+tailStream : Stream Nat → ▹ Stream Nat
+tailStream := fun (x : Stream Nat) . tl x

@@ -29,6 +29,9 @@ recNat = leadingNode "recNat" maxPrec (symbol "recNat")
 plus :: Parser
 plus = infixLeft "plus" 65 (symbol "+") term
 
+mul :: Parser
+mul = infixLeft "mul" 70 (symbol "*") term
+
 {-- List parsers --}
 list :: Parser
 list = leadingNode "list" maxPrec (symbol "List")
@@ -56,6 +59,12 @@ fbk = leadingNode "fbk" maxPrec
     (symbol "fbk" `andthen` funBinder `andthen` symbol "." `andthen` symbol "<"
     `andthen` categoryParser term 0 `andthen` symbol "," `andthen`
     categoryParser term 0 `andthen` symbol ">")
+
+hd :: Parser
+hd = leadingNode "hd" maxPrec (symbol "hd")
+
+tl :: Parser
+tl = leadingNode "tl" maxPrec (symbol "tl")
 
 {-- Later parsers --}
 later :: Parser
@@ -108,11 +117,11 @@ app = trailingNode "app" leadPrec maxPrec (many1 argument)
 addTermParsers :: ParserContext -> ParserContext
 addTermParsers rules =
     let trailingRules = addTrailingParsers term [arrow, app, listCons, fby, 
-            plus]
+            plus, mul]
             rules
         allRules = addLeadingParsers term
             [ident, num, nat, paren, fun, recNat, succNat, bracketList, stream,
-            later, fbk, list, recList, next]
+            later, fbk, list, recList, next, hd, tl]
             trailingRules in
     allRules
 
