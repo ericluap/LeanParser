@@ -45,6 +45,12 @@ stream = leadingNode "stream" maxPrec (symbol "Stream")
 fby :: Parser
 fby = infixOp "fby" 65 (symbol "fby") term
 
+fbk :: Parser
+fbk = leadingNode "fbk" maxPrec
+    (symbol "fbk" `andthen` funBinder `andthen` symbol "." `andthen` symbol "<"
+    `andthen` categoryParser term 0 `andthen` symbol "," `andthen`
+    categoryParser term 0 `andthen` symbol ">")
+
 {-- Later parsers --}
 later :: Parser
 later = prefix "later" 100 (symbol "▹") term
@@ -61,7 +67,9 @@ arrow = trailingNode "arrow" 25 0
     (symbol "→" `andthen` categoryParser term 25)
 
 funBinder :: Parser
-funBinder = ident `andthen` symbol ":" `andthen` categoryParser term 0
+funBinder = symbol "(" `andthen`
+    ident `andthen` symbol ":" `andthen` categoryParser term 0 `andthen`
+    symbol ")"
 
 fun :: Parser
 fun = leadingNode "fun" maxPrec
@@ -97,7 +105,7 @@ addTermParsers rules =
             rules
         allRules = addLeadingParsers term
             [ident, num, nat, paren, fun, recNat, succNat, bracketList, stream,
-            later]
+            later, fbk]
             trailingRules in
     allRules
 

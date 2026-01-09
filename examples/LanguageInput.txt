@@ -1,14 +1,17 @@
 test : Nat → Nat → Nat
-test := fun x : Nat . x 2 y
+test := fun (x : Nat) . x 2 y
 
 num : Nat
-num := recNat 0 (fun x : Nat . fun ih : Nat . S (S ih)) 5
+num := recNat 0 (fun (x : Nat) . fun (ih : Nat) . S (S ih)) 5
 
 list : List Nat
 list := 3 :: 4 :: [5, 6, 7]
 
 stream : ▹ Stream Nat → Stream Nat
-stream := fun x : ▹ Stream Nat . 3 fby x
+stream := fun (x : ▹ Stream Nat) . 3 fby x
 
 stream2 : Stream Nat → Stream Nat
-stream2 := fun x : Stream Nat . 1 fby next (2 fby x)
+stream2 := fun (x : Stream Nat) . 1 fby next (2 fby x)
+
+fbkStream : Stream Nat
+fbkStream := fbk (s : ▹ Stream Nat) . <0 fby s, 1 fby s>
