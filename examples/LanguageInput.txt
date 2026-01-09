@@ -2,14 +2,14 @@ test : Nat → Nat → Nat
 test := fun (x : Nat) . x 2 y
 
 num : Nat
-num := recNat 0 (fun (x : Nat) . fun (ih : Nat) . S (S ih)) 5
+num := recNat 0 (fun (x : Nat) (ih : Nat) . S (S ih)) 5
 
 list : List Nat
 list := 3 :: 4 :: [5, 6, 7]
 
 recListTest : Nat
-recListTest := recList 0 (fun (head : Nat) . fun (tail : List Nat) .
-    fun (ih : Nat) . head + ih) list
+recListTest := recList 0 (fun (head : Nat) (tail : List Nat) (ih : Nat) .
+    head + ih) list
 
 stream : ▹ Stream Nat → Stream Nat
 stream := fun (x : ▹ Stream Nat) . 3 fby x

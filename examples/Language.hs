@@ -79,7 +79,7 @@ funBinder = symbol "(" `andthen`
 
 fun :: Parser
 fun = leadingNode "fun" maxPrec
-    (symbol "fun" `andthen` funBinder `andthen` symbol "." `andthen`
+    (symbol "fun" `andthen` many1 funBinder `andthen` symbol "." `andthen`
     categoryParser term 0)
 
 {-
